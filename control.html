@@ -1,263 +1,173 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1"
->
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AVEDOW CONTROL</title>
 
 <style>
-
 *{box-sizing:border-box}
 
 body{
- margin:0;
- background:#080b10;
- color:white;
- font-family:Arial,sans-serif;
+  margin:0;
+  background:#070a0f;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:20px;
 }
 
-.app{
- width:min(600px,94%);
- margin:auto;
- padding:20px;
+.box{
+  max-width:500px;
+  margin:auto;
+  background:#111720;
+  border:1px solid #26313d;
+  border-radius:22px;
+  padding:20px;
 }
 
 h1{
- text-align:center;
- letter-spacing:4px;
-}
-
-.card{
- background:#111720;
- border:1px solid #293444;
- border-radius:16px;
- padding:18px;
- margin:12px 0;
-}
-
-input,button{
- width:100%;
- padding:15px;
- margin:6px 0;
- border-radius:9px;
- border:1px solid #344154;
- background:#090f16;
- color:white;
+  text-align:center;
+  color:#00e5ff;
 }
 
 button{
- background:#172235;
- font-weight:bold;
+  width:100%;
+  padding:17px;
+  margin-top:12px;
+  border:0;
+  border-radius:12px;
+  background:#008da3;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
 }
 
-.status{
- padding:12px;
- background:#080c12;
- border-radius:8px;
+input{
+  width:100%;
+  margin-top:15px;
 }
-
 </style>
-
 </head>
 
 <body>
 
-<div class="app">
+<div class="box">
 
 <h1>AVEDOW CONTROL</h1>
 
-<div class="card">
-
-<h3>ROOM</h3>
-
-<input
- id="room"
- placeholder="Kode room"
->
-
-<button onclick="connectControl()">
-🔗 CONNECT
-</button>
-
-<div
- id="status"
- class="status"
->
-Belum terhubung
-</div>
-
-</div>
-
-
-<div class="card">
-
-<h3>PLAYER CONTROL</h3>
-
-<button onclick="command('previous')">
+<button onclick="sendCommand('previous')">
 ⏮ PREVIOUS
 </button>
 
-<button onclick="command('play')">
+<button onclick="sendCommand('play')">
 ▶ PLAY
 </button>
 
-<button onclick="command('pause')">
+<button onclick="sendCommand('pause')">
 ⏸ PAUSE
 </button>
 
-<button onclick="command('next')">
+<button onclick="sendCommand('next')">
 ⏭ NEXT
 </button>
 
-<button onclick="command('mute')">
+<button onclick="sendCommand('mute')">
 🔇 MUTE
 </button>
 
-</div>
-
-
-<div class="card">
-
-<h3>VOLUME</h3>
-
 <input
- id="volume"
- type="range"
- min="0"
- max="100"
- value="100"
- oninput="setVolume(this.value)"
+  id="volume"
+  type="range"
+  min="0"
+  max="100"
+  value="100"
+  oninput="volumeChange(this.value)"
 >
 
 </div>
 
-</div>
+
+<script type="module">
+
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getDatabase,
+  ref,
+  push
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+const firebaseConfig = {
 
-<script>
+  apiKey:"ISI_API_KEY",
 
-const firebaseConfig={
- apiKey:"ISI_API_KEY_FIREBASE",
- authDomain:"ISI_PROJECT.firebaseapp.com",
- databaseURL:"https://ISI_PROJECT-default-rtdb.firebaseio.com",
- projectId:"ISI_PROJECT",
- storageBucket:"ISI_PROJECT.appspot.com",
- messagingSenderId:"ISI_SENDER_ID",
- appId:"ISI_APP_ID"
+  authDomain:
+    "ISI_PROJECT.firebaseapp.com",
+
+  databaseURL:
+    "https://ISI_PROJECT-default-rtdb.firebaseio.com",
+
+  projectId:
+    "ISI_PROJECT",
+
+  storageBucket:
+    "ISI_PROJECT.appspot.com",
+
+  messagingSenderId:
+    "ISI_SENDER_ID",
+
+  appId:
+    "ISI_APP_ID"
+
 };
 
-firebase.initializeApp(firebaseConfig);
 
-const db=firebase.database();
+const app =
+  initializeApp(firebaseConfig);
 
-let room="";
-
-
-function connectControl(){
-
- room=
- document.getElementById(
-   "room"
- ).value.trim();
+const db =
+  getDatabase(app);
 
 
- if(!room){
-
-   alert("Masukkan kode room.");
-
-   return;
-
- }
+const CHANNEL =
+  "AVEDOW_AUTO_AUDIO";
 
 
- db.ref(
-   "avedow/"+room+
-   "/control"
- ).set({
+window.sendCommand =
+async function(command){
 
-   online:true,
+  await push(
 
-   time:Date.now()
+    ref(
+      db,
+      `avedow/${CHANNEL}/commands`
+    ),
 
- });
+    command
 
+  );
 
- document.getElementById(
-   "status"
- ).textContent=
-   "CONTROL TERHUBUNG";
-
-}
+};
 
 
-function command(type){
+window.volumeChange =
+async function(value){
 
- if(!room){
+  await push(
 
-   alert(
-     "Hubungkan room dahulu."
-   );
+    ref(
+      db,
+      `avedow/${CHANNEL}/commands`
+    ),
 
-   return;
+    "volume:" + value
 
- }
+  );
 
-
- db.ref(
-   "avedow/"+room+
-   "/commands"
- ).push({
-
-   type:type,
-
-   time:Date.now()
-
- });
-
-}
-
-
-function setVolume(value){
-
- commandWithData(
-   "volume",
-   Number(value)
- );
-
-}
-
-
-function commandWithData(
- type,
- value
-){
-
- if(!room)return;
-
-
- db.ref(
-   "avedow/"+room+
-   "/commands"
- ).push({
-
-   type:type,
-
-   value:value,
-
-   time:Date.now()
-
- });
-
-}
+};
 
 </script>
 
