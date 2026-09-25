@@ -8,160 +8,106 @@
 <style>
 *{box-sizing:border-box}
 body{
- margin:0;
- background:#080b10;
- color:white;
- font-family:Arial,sans-serif;
+  margin:0;
+  background:#080b10;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  padding:20px;
 }
-.app{
- width:min(900px,94%);
- margin:auto;
- padding:15px;
+.box{
+  max-width:600px;
+  margin:auto;
+  background:#11161d;
+  border:1px solid #29313c;
+  border-radius:18px;
+  padding:20px;
 }
-h1{text-align:center;letter-spacing:3px}
-.card{
- background:#111720;
- border:1px solid #293444;
- border-radius:16px;
- padding:16px;
- margin:12px 0;
+h1{
+  text-align:center;
+  color:#00e5ff;
 }
 input,button{
- width:100%;
- padding:12px;
- margin:5px 0;
- border-radius:9px;
- border:1px solid #344154;
- background:#0a1017;
- color:white;
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:10px;
+  border:1px solid #394451;
+  background:#080b10;
+  color:white;
+  font-size:16px;
 }
-button{background:#172235;font-weight:bold}
-button:active{transform:scale(.98)}
-#player{
- width:100%;
- aspect-ratio:16/9;
- background:#000;
-}
-.result{
- padding:11px;
- margin:5px 0;
- border:1px solid #293444;
- border-radius:8px;
- cursor:pointer;
+button{
+  background:#008fa3;
+  border:0;
+  font-weight:bold;
 }
 .status{
- padding:11px;
- background:#080c12;
- border-radius:8px;
- margin-top:8px;
+  margin-top:18px;
+  padding:18px;
+  border-radius:12px;
+  text-align:center;
+  background:#191f27;
+  font-size:20px;
+  font-weight:bold;
+}
+.log{
+  margin-top:15px;
+  background:#05070a;
+  padding:12px;
+  border-radius:10px;
+  height:180px;
+  overflow:auto;
+  font-size:13px;
+  color:#9defff;
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
+<div class="box">
 
 <h1>AVEDOW TRANSMITTER</h1>
 
-<div class="card">
+<input id="room" placeholder="Masukkan ROOM, contoh: AVEDOW123">
 
-<h3>ROOM</h3>
-
-<input id="room" placeholder="Kode room, contoh AVEDOW123">
-
-<button onclick="connectRoom()">
-🔗 HUBUNGKAN RECEIVER
-</button>
+<button id="connectBtn">HUBUNGKAN RECEIVER</button>
 
 <div id="status" class="status">
-Belum terhubung
+🔴 OFFLINE
 </div>
 
-</div>
-
-
-<div class="card">
-
-<h3>YOUTUBE</h3>
-
-<input
- id="youtubeKey"
- placeholder="YouTube Data API v3 Key"
->
-
-<input
- id="search"
- placeholder="Cari lagu/video YouTube"
->
-
-<button onclick="searchYouTube()">
-🔎 CARI
+<button id="captureBtn">
+AKTIFKAN AUDIO STREAM
 </button>
 
-<div id="results"></div>
+<div id="log" class="log"></div>
 
 </div>
 
+<script type="module">
 
-<div class="card">
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-<h3>PLAYER</h3>
-
-<div id="player"></div>
-
-<button onclick="playVideo()">▶ PLAY</button>
-<button onclick="pauseVideo()">⏸ PAUSE</button>
-<button onclick="previousVideo()">⏮ PREVIOUS</button>
-<button onclick="nextVideo()">⏭ NEXT</button>
-
-<label>VOLUME</label>
-
-<input
- id="volume"
- type="range"
- min="0"
- max="100"
- value="100"
- oninput="changeVolume(this.value)"
->
-
-</div>
+import {
+  getDatabase,
+  ref,
+  set,
+  get,
+  onValue,
+  push,
+  remove
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-<div class="card">
-
-<h3>AUDIO TRANSMISSION</h3>
-
-<button onclick="startAudio()">
-🎙 AKTIFKAN AUDIO
-</button>
-
-<button onclick="stopAudio()">
-⛔ MATIKAN AUDIO
-</button>
-
-<div id="audioStatus" class="status">
-Audio belum dikirim
-</div>
-
-</div>
-
-</div>
-
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
-
-<script>
-
-/* =================================================
-   ISI DENGAN FIREBASE CONFIG MILIKMU
-   ================================================= */
+/* =========================================
+   MASUKKAN FIREBASE CONFIG KAMU DI SINI
+========================================= */
 
 const firebaseConfig = {
-  apiKey: "ISI_API_KEY_FIREBASE",
+  apiKey: "ISI_API_KEY",
   authDomain: "ISI_PROJECT.firebaseapp.com",
   databaseURL: "https://ISI_PROJECT-default-rtdb.firebaseio.com",
   projectId: "ISI_PROJECT",
@@ -170,407 +116,295 @@ const firebaseConfig = {
   appId: "ISI_APP_ID"
 };
 
-firebase.initializeApp(firebaseConfig);
 
-const db = firebase.database();
+/* ========================================= */
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let pc = null;
+let localStream = null;
+let roomCode = "";
+let connected = false;
+
+const statusBox = document.getElementById("status");
+const logBox = document.getElementById("log");
 
 
-/* ================================================= */
-
-let room="";
-let player=null;
-let playlist=[];
-let current=0;
-
-let pc=null;
-let localStream=null;
+function log(text){
+  const time = new Date().toLocaleTimeString();
+  logBox.innerHTML += `[${time}] ${text}<br>`;
+  logBox.scrollTop = logBox.scrollHeight;
+}
 
 
-/* ================= YOUTUBE ================= */
+function status(text){
+  statusBox.textContent = text;
+}
 
-function onYouTubeIframeAPIReady(){
 
- player=new YT.Player("player",{
-   videoId:"",
-   playerVars:{
-     playsinline:1,
-     controls:1
-   }
- });
+function setConnectionState(state){
+
+  if(state === "waiting"){
+    status("🟡 MENUNGGU RECEIVER");
+  }
+
+  if(state === "connecting"){
+    status("🔵 MENGHUBUNGKAN...");
+  }
+
+  if(state === "connected"){
+    status("🟢 TERHUBUNG");
+    connected = true;
+  }
+
+  if(state === "disconnected"){
+    status("🔴 TERPUTUS");
+    connected = false;
+  }
+}
+
+
+/* =========================================
+   BUAT WEBRTC
+========================================= */
+
+async function createConnection(){
+
+  roomCode =
+    document.getElementById("room").value.trim();
+
+  if(!roomCode){
+    alert("Masukkan ROOM terlebih dahulu");
+    return;
+  }
+
+  setConnectionState("waiting");
+
+  log("Membuat koneksi WebRTC...");
+  
+  pc = new RTCPeerConnection({
+    iceServers:[
+      {
+        urls:"stun:stun.l.google.com:19302"
+      }
+    ]
+  });
+
+
+  pc.onconnectionstatechange = () => {
+
+    log("WebRTC: " + pc.connectionState);
+
+    if(pc.connectionState === "connecting"){
+      setConnectionState("connecting");
+    }
+
+    if(pc.connectionState === "connected"){
+      setConnectionState("connected");
+    }
+
+    if(
+      pc.connectionState === "disconnected" ||
+      pc.connectionState === "failed" ||
+      pc.connectionState === "closed"
+    ){
+      setConnectionState("disconnected");
+    }
+  };
+
+
+  pc.oniceconnectionstatechange = () => {
+    log("ICE: " + pc.iceConnectionState);
+  };
+
+
+  /* ICE transmitter */
+
+  pc.onicecandidate = async event => {
+
+    if(event.candidate){
+
+      await push(
+        ref(
+          db,
+          `avedow/${roomCode}/transmitterCandidates`
+        ),
+        event.candidate.toJSON()
+      );
+
+    }
+
+  };
+
+
+  /* Tunggu answer dari receiver */
+
+  onValue(
+    ref(
+      db,
+      `avedow/${roomCode}/receiverAnswer`
+    ),
+    async snapshot => {
+
+      const answer = snapshot.val();
+
+      if(
+        answer &&
+        pc &&
+        pc.signalingState !== "stable"
+      ){
+
+        log("Answer RECEIVER diterima");
+
+        await pc.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
+
+      }
+
+    }
+  );
+
+
+  /* Terima ICE candidate dari receiver */
+
+  onValue(
+    ref(
+      db,
+      `avedow/${roomCode}/receiverCandidates`
+    ),
+    async snapshot => {
+
+      const data = snapshot.val();
+
+      if(!data) return;
+
+      for(const key in data){
+
+        try{
+
+          await pc.addIceCandidate(
+            new RTCIceCandidate(data[key])
+          );
+
+        }catch(e){
+
+          console.log(e);
+
+        }
+
+      }
+
+    }
+  );
+
+
+  /* Buat OFFER */
+
+  const offer =
+    await pc.createOffer();
+
+  await pc.setLocalDescription(offer);
+
+
+  await set(
+    ref(
+      db,
+      `avedow/${roomCode}/transmitterOffer`
+    ),
+    {
+      type: offer.type,
+      sdp: offer.sdp
+    }
+  );
+
+
+  log("OFFER dikirim");
+  log("Sekarang buka RECEIVER dengan ROOM yang sama");
 
 }
 
 
-async function searchYouTube(){
-
- const key=document.getElementById("youtubeKey").value.trim();
- const query=document.getElementById("search").value.trim();
-
- if(!key){
-   alert("Masukkan YouTube API Key.");
-   return;
- }
-
- if(!query){
-   alert("Masukkan pencarian.");
-   return;
- }
-
- const url=
- "https://www.googleapis.com/youtube/v3/search"+
- "?part=snippet"+
- "&type=video"+
- "&maxResults=10"+
- "&q="+encodeURIComponent(query)+
- "&key="+encodeURIComponent(key);
-
- try{
-
-   const response=await fetch(url);
-   const data=await response.json();
-
-   const box=document.getElementById("results");
-   box.innerHTML="";
-
-   if(!data.items){
-     box.innerHTML="<p>Tidak ada hasil.</p>";
-     return;
-   }
-
-   data.items.forEach(item=>{
-
-     const id=item.id.videoId;
-
-     const div=document.createElement("div");
-     div.className="result";
-
-     div.textContent=item.snippet.title;
-
-     div.onclick=()=>{
-
-       playlist.push(id);
-       current=playlist.length-1;
-
-       player.loadVideoById(id);
-
-       sendCommand({
-         type:"load",
-         videoId:id
-       });
-
-     };
-
-     box.appendChild(div);
-
-   });
-
- }catch(e){
-
-   alert("Gagal mencari YouTube.");
-   console.error(e);
-
- }
-
-}
-
-
-function playVideo(){
-
- if(player) player.playVideo();
-
- sendCommand({type:"play"});
-}
-
-
-function pauseVideo(){
-
- if(player) player.pauseVideo();
-
- sendCommand({type:"pause"});
-}
-
-
-function previousVideo(){
-
- if(!playlist.length)return;
-
- current--;
-
- if(current<0)
-   current=playlist.length-1;
-
- player.loadVideoById(
-   playlist[current]
- );
-
- sendCommand({
-   type:"load",
-   videoId:playlist[current]
- });
-
-}
-
-
-function nextVideo(){
-
- if(!playlist.length)return;
-
- current++;
-
- if(current>=playlist.length)
-   current=0;
-
- player.loadVideoById(
-   playlist[current]
- );
-
- sendCommand({
-   type:"load",
-   videoId:playlist[current]
- });
-
-}
-
-
-function changeVolume(value){
-
- if(player)
-   player.setVolume(Number(value));
-
- sendCommand({
-   type:"volume",
-   value:Number(value)
- });
-
-}
-
-
-/* ================= FIREBASE ROOM ================= */
-
-function connectRoom(){
-
- room=document.getElementById("room").value.trim();
-
- if(!room){
-   alert("Masukkan kode room.");
-   return;
- }
-
- const ref=db.ref("avedow/"+room+"/transmitter");
-
- ref.set({
-   online:true,
-   time:Date.now()
- });
-
- document.getElementById("status").textContent=
-   "Room aktif. Menunggu Receiver...";
-
- listenReceiver();
-
-}
-
-
-function listenReceiver(){
-
- db.ref("avedow/"+room+"/receiver/answer")
- .on("value",async snap=>{
-
-   const answer=snap.val();
-
-   if(!answer || !pc)return;
-
-   if(pc.signalingState!=="stable"){
-
-     try{
-       await pc.setRemoteDescription(
-         new RTCSessionDescription(answer)
-       );
-
-       document.getElementById("status").textContent=
-         "Receiver terhubung.";
-
-     }catch(e){
-       console.error(e);
-     }
-
-   }
-
- });
-
-}
-
-
-/* ================= WEBRTC ================= */
+/* =========================================
+   AUDIO CAPTURE
+========================================= */
 
 async function startAudio(){
 
- if(!room){
-   alert("Hubungkan room dahulu.");
-   return;
- }
-
- try{
-
-   localStream=
-   await navigator.mediaDevices.getDisplayMedia({
-     video:true,
-     audio:true
-   });
-
-   const audioTracks=
-     localStream.getAudioTracks();
-
-   if(!audioTracks.length){
-
-     alert(
-       "Audio tidak tertangkap. Saat Share Screen pilih Share audio."
-     );
-
-     return;
-   }
+  if(!pc){
+    alert("Hubungkan receiver terlebih dahulu");
+    return;
+  }
 
 
-   pc=new RTCPeerConnection({
-     iceServers:[
-       {
-         urls:"stun:stun.l.google.com:19302"
-       }
-     ]
-   });
+  try{
+
+    localStream =
+      await navigator.mediaDevices.getDisplayMedia({
+
+        video:true,
+        audio:true
+
+      });
 
 
-   audioTracks.forEach(track=>{
-     pc.addTrack(track,localStream);
-   });
+    const tracks =
+      localStream.getAudioTracks();
 
 
-   pc.onicecandidate=event=>{
+    if(tracks.length === 0){
 
-     if(event.candidate){
+      alert(
+        "Browser tidak memberikan audio. Saat memilih layar/tab, aktifkan SHARE AUDIO jika tersedia."
+      );
 
-       db.ref(
-         "avedow/"+room+
-         "/transmitter/candidates"
-       ).push(
-         event.candidate.toJSON()
-       );
+      log("Tidak ada audio track");
 
-     }
-
-   };
+      return;
+    }
 
 
-   const offer=
-     await pc.createOffer();
+    tracks.forEach(track => {
 
-   await pc.setLocalDescription(offer);
+      pc.addTrack(
+        track,
+        localStream
+      );
 
-
-   await db.ref(
-     "avedow/"+room+
-     "/transmitter/offer"
-   ).set({
-     type:offer.type,
-     sdp:offer.sdp
-   });
+    });
 
 
-   db.ref(
-     "avedow/"+room+
-     "/receiver/candidates"
-   ).on("child_added",async snap=>{
-
-     try{
-
-       await pc.addIceCandidate(
-         new RTCIceCandidate(
-           snap.val()
-         )
-       );
-
-     }catch(e){
-       console.error(e);
-     }
-
-   });
+    log("Audio track berhasil ditambahkan");
 
 
-   document.getElementById(
-     "audioStatus"
-   ).textContent=
-     "AUDIO STREAM AKTIF";
+    /* Jika user menghentikan capture */
 
+    tracks[0].onended = () => {
 
-   document.getElementById(
-     "status"
-   ).textContent=
-     "Menunggu koneksi Receiver...";
+      log("Audio capture dihentikan");
 
+    };
 
- }catch(e){
+  }catch(error){
 
-   console.error(e);
+    log("Gagal capture: " + error.message);
 
-   document.getElementById(
-     "audioStatus"
-   ).textContent=
-     "Gagal: "+e.message;
+    alert(error.message);
 
- }
+  }
 
 }
 
 
-function stopAudio(){
-
- if(localStream){
-
-   localStream.getTracks().forEach(
-     track=>track.stop()
-   );
-
-   localStream=null;
- }
-
- if(pc){
-
-   pc.close();
-   pc=null;
- }
-
- if(room){
-
-   db.ref(
-     "avedow/"+room+
-     "/transmitter/offer"
-   ).remove();
-
- }
-
- document.getElementById(
-   "audioStatus"
- ).textContent=
-   "Audio dihentikan.";
-
-}
+document
+  .getElementById("connectBtn")
+  .onclick = createConnection;
 
 
-/* ================= CONTROL ================= */
-
-function sendCommand(command){
-
- if(!room)return;
-
- db.ref(
-   "avedow/"+room+
-   "/commands"
- ).push({
-   ...command,
-   time:Date.now()
- });
-
-}
+document
+  .getElementById("captureBtn")
+  .onclick = startAudio;
 
 </script>
 
