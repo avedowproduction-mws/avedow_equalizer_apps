@@ -2,79 +2,88 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AVEDOW RECEIVER</title>
 
 <style>
-
-*{
-  box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 body{
-  margin:0;
-  background:#070a0f;
-  color:white;
-  font-family:Arial,sans-serif;
-  padding:15px;
+ margin:0;
+ background:#070a0f;
+ color:white;
+ font-family:Arial,sans-serif;
 }
 
 .app{
-  max-width:1000px;
-  margin:auto;
+ width:min(1100px,95%);
+ margin:auto;
+ padding:15px;
 }
 
 h1{
-  text-align:center;
-  letter-spacing:4px;
+ text-align:center;
+ letter-spacing:3px;
 }
 
 .card{
-  background:#111720;
-  border:1px solid #293444;
-  border-radius:15px;
-  padding:15px;
-  margin:12px 0;
+ background:#111720;
+ border:1px solid #293444;
+ border-radius:16px;
+ padding:16px;
+ margin:12px 0;
+}
+
+input,button{
+ width:100%;
+ padding:12px;
+ margin:5px 0;
+ border-radius:9px;
+ border:1px solid #344154;
+ background:#090f16;
+ color:white;
+}
+
+button{
+ background:#172235;
+ font-weight:bold;
 }
 
 .status{
-  background:#080c12;
-  padding:12px;
-  border-radius:9px;
+ padding:12px;
+ background:#080c12;
+ border-radius:8px;
 }
 
 .eq{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:10px;
+ display:grid;
+ grid-template-columns:repeat(10,1fr);
+ gap:8px;
 }
 
 .band{
-  text-align:center;
+ text-align:center;
+ font-size:11px;
 }
 
 .band input{
-  writing-mode:vertical-lr;
-  direction:rtl;
-  height:150px;
-}
-
-label{
-  display:block;
-  font-size:12px;
-}
-
-input[type=range]{
-  width:100%;
+ height:150px;
+ writing-mode:vertical-lr;
+ direction:rtl;
 }
 
 canvas{
-  width:100%;
-  height:220px;
-  background:#020406;
-  border-radius:10px;
+ width:100%;
+ height:250px;
+ background:#020406;
+ border-radius:10px;
 }
 
+@media(max-width:700px){
+ .eq{
+   grid-template-columns:repeat(5,1fr);
+ }
+}
 </style>
 </head>
 
@@ -86,10 +95,19 @@ canvas{
 
 <div class="card">
 
-<h3>CONNECTION</h3>
+<h3>ROOM</h3>
+
+<input
+ id="room"
+ placeholder="Masukkan kode room"
+>
+
+<button onclick="connectReceiver()">
+🔗 CONNECT
+</button>
 
 <div id="status" class="status">
-Menunggu audio...
+Menunggu...
 </div>
 
 </div>
@@ -101,43 +119,63 @@ Menunggu audio...
 
 <div class="eq">
 
-<script>
-
-const frequencies = [
-31,63,125,250,500,
-1000,2000,4000,8000,16000
-];
-
-frequencies.forEach((f,i)=>{
-
-document.write(`
 <div class="band">
-
-<label>${f} Hz</label>
-
-<input
-type="range"
-min="-12"
-max="12"
-value="0"
-id="eq${i}"
->
-
-</div>
-`);
-
-});
-
-</script>
-
+31 Hz
+<input id="eq0" type="range" min="-12" max="12" value="0">
 </div>
 
+<div class="band">
+63 Hz
+<input id="eq1" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+125 Hz
+<input id="eq2" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+250 Hz
+<input id="eq3" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+500 Hz
+<input id="eq4" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+1K
+<input id="eq5" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+2K
+<input id="eq6" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+4K
+<input id="eq7" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+8K
+<input id="eq8" type="range" min="-12" max="12" value="0">
+</div>
+
+<div class="band">
+16K
+<input id="eq9" type="range" min="-12" max="12" value="0">
+</div>
+
+</div>
 </div>
 
 
 <div class="card">
 
-<h3>SPECTRUM</h3>
+<h3>SPECTRUM ANALYZER</h3>
 
 <canvas id="spectrum"></canvas>
 
@@ -146,420 +184,515 @@ id="eq${i}"
 
 <div class="card">
 
-<h3>MASTER</h3>
-
-<input
-id="master"
-type="range"
-min="0"
-max="1"
-step="0.01"
-value="1"
->
-
 <h3>COMPRESSOR</h3>
 
 <input
-id="compressor"
-type="range"
-min="0"
-max="1"
-step="0.01"
-value="0.5"
+ id="compression"
+ type="range"
+ min="1"
+ max="20"
+ value="8"
+ step=".1"
 >
 
-<h3>REVERB / DELAY</h3>
+<h3>REVERB</h3>
 
 <input
-id="delay"
-type="range"
-min="0"
-max="1"
-step="0.01"
-value="0.25"
+ id="reverb"
+ type="range"
+ min="0"
+ max="1"
+ value=".2"
+ step=".01"
+>
+
+<h3>DELAY</h3>
+
+<input
+ id="delay"
+ type="range"
+ min="0"
+ max="1"
+ value=".2"
+ step=".01"
+>
+
+<h3>MASTER</h3>
+
+<input
+ id="master"
+ type="range"
+ min="0"
+ max="1"
+ value="1"
+ step=".01"
 >
 
 </div>
 
 <audio
-id="audio"
-autoplay
-controls
-style="width:100%">
-</audio>
+ id="audio"
+ autoplay
+ controls
+ style="width:100%"
+></audio>
 
 </div>
 
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
 
+const firebaseConfig={
+ apiKey:"ISI_API_KEY_FIREBASE",
+ authDomain:"ISI_PROJECT.firebaseapp.com",
+ databaseURL:"https://ISI_PROJECT-default-rtdb.firebaseio.com",
+ projectId:"ISI_PROJECT",
+ storageBucket:"ISI_PROJECT.appspot.com",
+ messagingSenderId:"ISI_SENDER_ID",
+ appId:"ISI_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db=firebase.database();
+
+let room="";
+let pc=null;
+
 let audioContext;
-
 let source;
-
 let analyser;
-
 let master;
-
 let compressor;
-
-let delay;
-
+let delayNode;
 let delayGain;
 
-let eqNodes = [];
+let eqNodes=[];
+
+const frequencies=[
+ 31,63,125,250,500,
+ 1000,2000,4000,8000,16000
+];
 
 
-// ============================
-// AUDIO ENGINE
-// ============================
+/* ================= CONNECT ================= */
 
-function createAudioEngine(stream){
+async function connectReceiver(){
 
-  audioContext =
-    new (
-      window.AudioContext ||
-      window.webkitAudioContext
-    )();
+ room=document.getElementById("room").value.trim();
 
-
-  source =
-    audioContext.createMediaStreamSource(
-      stream
-    );
+ if(!room){
+   alert("Masukkan room.");
+   return;
+ }
 
 
-  // 10 BAND EQ
-
-  frequencies.forEach((frequency,i)=>{
-
-    const filter =
-      audioContext.createBiquadFilter();
-
-    filter.type =
-      "peaking";
-
-    filter.frequency.value =
-      frequency;
-
-    filter.Q.value =
-      1;
-
-    filter.gain.value =
-      0;
-
-    eqNodes.push(filter);
-
-  });
+ pc=new RTCPeerConnection({
+   iceServers:[
+     {
+       urls:"stun:stun.l.google.com:19302"
+     }
+   ]
+ });
 
 
-  // COMPRESSOR
+ pc.ontrack=event=>{
 
-  compressor =
-    audioContext.createDynamicsCompressor();
+   const stream=event.streams[0];
 
-  compressor.threshold.value =
-    -24;
+   const audio=
+     document.getElementById("audio");
 
-  compressor.knee.value =
-    20;
+   audio.srcObject=stream;
 
-  compressor.ratio.value =
-    8;
+   startAudioEngine(stream);
 
-  compressor.attack.value =
-    0.003;
-
-  compressor.release.value =
-    0.25;
+ };
 
 
-  // DELAY
+ pc.onicecandidate=event=>{
 
-  delay =
-    audioContext.createDelay(2);
+   if(event.candidate){
 
-  delay.delayTime.value =
-    0.18;
+     db.ref(
+       "avedow/"+room+
+       "/receiver/candidates"
+     ).push(
+       event.candidate.toJSON()
+     );
 
+   }
 
-  delayGain =
-    audioContext.createGain();
-
-  delayGain.gain.value =
-    0.25;
-
-
-  // ANALYSER
-
-  analyser =
-    audioContext.createAnalyser();
-
-  analyser.fftSize =
-    2048;
+ };
 
 
-  // MASTER
+ /* GET TRANSMITTER OFFER */
 
-  master =
-    audioContext.createGain();
+ db.ref(
+   "avedow/"+room+
+   "/transmitter/offer"
+ ).on("value",async snap=>{
 
-  master.gain.value =
-    1;
+   const offer=snap.val();
 
+   if(!offer)return;
 
-  // ============================
-  // ROUTING
-  // ============================
+   try{
 
-  let node = source;
-
-
-  eqNodes.forEach(filter =>{
-
-    node.connect(filter);
-
-    node = filter;
-
-  });
+     await pc.setRemoteDescription(
+       new RTCSessionDescription(offer)
+     );
 
 
-  node.connect(compressor);
+     const answer=
+       await pc.createAnswer();
 
 
-  compressor.connect(delay);
-
-  delay.connect(delayGain);
-
-  delayGain.connect(master);
+     await pc.setLocalDescription(answer);
 
 
-  compressor.connect(master);
+     await db.ref(
+       "avedow/"+room+
+       "/receiver/answer"
+     ).set({
+       type:answer.type,
+       sdp:answer.sdp
+     });
 
 
-  master.connect(analyser);
+     document.getElementById(
+       "status"
+     ).textContent=
+       "Receiver tersambung.";
 
-  analyser.connect(
-    audioContext.destination
-  );
+   }catch(e){
+
+     console.error(e);
+
+   }
+
+ });
 
 
-  setupControls();
+ /* GET TRANSMITTER ICE */
 
-  drawSpectrum();
+ db.ref(
+   "avedow/"+room+
+   "/transmitter/candidates"
+ ).on("child_added",async snap=>{
+
+   try{
+
+     await pc.addIceCandidate(
+       new RTCIceCandidate(
+         snap.val()
+       )
+     );
+
+   }catch(e){
+
+     console.error(e);
+
+   }
+
+ });
 
 
-  document.getElementById("status")
-    .textContent =
-    "Audio diterima dan DSP aktif.";
+ /* ONLINE */
+
+ db.ref(
+   "avedow/"+room+
+   "/receiver"
+ ).update({
+   online:true,
+   time:Date.now()
+ });
+
+
+ listenCommands();
 
 }
 
 
-// ============================
-// CONTROLS
-// ============================
+/* ================= COMMANDS ================= */
+
+function listenCommands(){
+
+ db.ref(
+   "avedow/"+room+
+   "/commands"
+ ).on("child_added",snap=>{
+
+   const cmd=snap.val();
+
+   console.log(
+     "COMMAND:",
+     cmd
+   );
+
+   /*
+    Receiver menerima perintah.
+    Audio sendiri tetap berasal dari WebRTC.
+   */
+
+ });
+
+}
+
+
+/* ================= AUDIO DSP ================= */
+
+function startAudioEngine(stream){
+
+ if(audioContext){
+   audioContext.close();
+ }
+
+
+ audioContext=
+ new(
+   window.AudioContext ||
+   window.webkitAudioContext
+ )();
+
+
+ source=
+ audioContext.createMediaStreamSource(
+   stream
+ );
+
+
+ eqNodes=[];
+
+
+ frequencies.forEach(freq=>{
+
+   const filter=
+     audioContext.createBiquadFilter();
+
+   filter.type="peaking";
+   filter.frequency.value=freq;
+   filter.Q.value=1;
+   filter.gain.value=0;
+
+   eqNodes.push(filter);
+
+ });
+
+
+ compressor=
+ audioContext.createDynamicsCompressor();
+
+ compressor.threshold.value=-24;
+ compressor.knee.value=20;
+ compressor.ratio.value=8;
+ compressor.attack.value=.003;
+ compressor.release.value=.25;
+
+
+ delayNode=
+ audioContext.createDelay(2);
+
+ delayNode.delayTime.value=.18;
+
+
+ delayGain=
+ audioContext.createGain();
+
+ delayGain.gain.value=.2;
+
+
+ analyser=
+ audioContext.createAnalyser();
+
+ analyser.fftSize=2048;
+
+
+ master=
+ audioContext.createGain();
+
+ master.gain.value=1;
+
+
+ let node=source;
+
+
+ eqNodes.forEach(filter=>{
+
+   node.connect(filter);
+
+   node=filter;
+
+ });
+
+
+ node.connect(compressor);
+
+ compressor.connect(master);
+
+ compressor.connect(delayNode);
+
+ delayNode.connect(delayGain);
+
+ delayGain.connect(master);
+
+ master.connect(analyser);
+
+ analyser.connect(
+   audioContext.destination
+ );
+
+
+ setupControls();
+
+ drawSpectrum();
+
+}
+
+
+/* ================= CONTROLS ================= */
 
 function setupControls(){
 
-  frequencies.forEach((f,i)=>{
+ eqNodes.forEach((node,i)=>{
 
-    document
-      .getElementById("eq"+i)
-      .addEventListener(
-        "input",
-        function(){
+   document.getElementById(
+     "eq"+i
+   ).oninput=function(){
 
-          eqNodes[i].gain.value =
-            Number(this.value);
+     node.gain.value=
+       Number(this.value);
 
-        }
-      );
+   };
 
-  });
+ });
 
 
-  document
-    .getElementById("master")
-    .addEventListener(
-      "input",
-      function(){
+ document.getElementById(
+   "master"
+ ).oninput=function(){
 
-        master.gain.value =
-          Number(this.value);
+   master.gain.value=
+     Number(this.value);
 
-      }
-    );
+ };
 
 
-  document
-    .getElementById("delay")
-    .addEventListener(
-      "input",
-      function(){
+ document.getElementById(
+   "delay"
+ ).oninput=function(){
 
-        delayGain.gain.value =
-          Number(this.value);
+   delayGain.gain.value=
+     Number(this.value);
 
-      }
-    );
+ };
 
 
-  document
-    .getElementById("compressor")
-    .addEventListener(
-      "input",
-      function(){
+ document.getElementById(
+   "compression"
+ ).oninput=function(){
 
-        const value =
-          Number(this.value);
+   compressor.ratio.value=
+     Number(this.value);
 
-        compressor.ratio.value =
-          1 + value * 19;
+ };
 
-      }
-    );
+
+ document.getElementById(
+   "reverb"
+ ).oninput=function(){
+
+   /*
+    Mengatur jumlah efek delay
+    sebagai ambience/reverb sederhana.
+   */
+
+   delayGain.gain.value=
+     Number(this.value);
+
+ };
 
 }
 
 
-// ============================
-// SPECTRUM
-// ============================
+/* ================= SPECTRUM ================= */
 
 function drawSpectrum(){
 
-  const canvas =
-    document.getElementById(
-      "spectrum"
-    );
+ const canvas=
+   document.getElementById(
+     "spectrum"
+   );
 
-  const ctx =
-    canvas.getContext("2d");
-
-
-  function draw(){
-
-    requestAnimationFrame(draw);
-
-    if(!analyser)
-      return;
+ const ctx=
+   canvas.getContext("2d");
 
 
-    const buffer =
-      new Uint8Array(
-        analyser.frequencyBinCount
-      );
+ function draw(){
+
+   requestAnimationFrame(draw);
+
+   if(!analyser)return;
 
 
-    analyser.getByteFrequencyData(
-      buffer
-    );
+   const data=
+     new Uint8Array(
+       analyser.frequencyBinCount
+     );
 
 
-    ctx.clearRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
+   analyser.getByteFrequencyData(
+     data
+   );
 
 
-    const barWidth =
-      canvas.width /
-      buffer.length *
-      2.5;
+   ctx.clearRect(
+     0,0,
+     canvas.width,
+     canvas.height
+   );
 
 
-    let x = 0;
+   const width=
+     canvas.width/data.length*3;
+
+   let x=0;
 
 
-    for(let i=0;
-        i<buffer.length;
-        i++){
+   for(let i=0;i<data.length;i++){
 
-      const barHeight =
-        buffer[i] *
-        canvas.height /
-        255;
+     const height=
+       data[i]*
+       canvas.height/
+       255;
 
 
-      ctx.fillStyle =
-        "#19ff88";
+     ctx.fillStyle="#00ff88";
 
 
-      ctx.fillRect(
-        x,
-        canvas.height-barHeight,
-        barWidth,
-        barHeight
-      );
+     ctx.fillRect(
+       x,
+       canvas.height-height,
+       width,
+       height
+     );
 
 
-      x += barWidth + 1;
+     x+=width+1;
 
-      if(x > canvas.width)
-        break;
+     if(x>canvas.width)
+       break;
 
-    }
+   }
 
-  }
+ }
 
-
-  draw();
+ draw();
 
 }
-
-
-// ============================
-// WEBRTC RECEIVER
-// ============================
-
-const peer =
-  new RTCPeerConnection({
-
-    iceServers:[
-      {
-        urls:
-        "stun:stun.l.google.com:19302"
-      }
-    ]
-
-  });
-
-
-peer.ontrack =
-  event => {
-
-    const stream =
-      event.streams[0];
-
-    const audio =
-      document.getElementById(
-        "audio"
-      );
-
-    audio.srcObject =
-      stream;
-
-
-    createAudioEngine(
-      stream
-    );
-
-  };
-
-
-peer.onconnectionstatechange =
-  () => {
-
-    document.getElementById(
-      "status"
-    ).textContent =
-      "WebRTC: " +
-      peer.connectionState;
-
-  };
 
 </script>
 
