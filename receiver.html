@@ -10,7 +10,7 @@
 
 body{
   margin:0;
-  background:#080b10;
+  background:#070a0f;
   color:white;
   font-family:Arial,sans-serif;
   padding:20px;
@@ -19,9 +19,9 @@ body{
 .box{
   max-width:600px;
   margin:auto;
-  background:#11161d;
-  border:1px solid #29313c;
-  border-radius:18px;
+  background:#111720;
+  border:1px solid #26313d;
+  border-radius:22px;
   padding:20px;
 }
 
@@ -30,42 +30,42 @@ h1{
   color:#00e5ff;
 }
 
+.status{
+  padding:20px;
+  margin-top:20px;
+  border-radius:14px;
+  background:#191f27;
+  text-align:center;
+  font-size:21px;
+  font-weight:bold;
+}
+
 button{
   width:100%;
+  border:0;
   padding:16px;
   margin-top:12px;
-  border:0;
   border-radius:12px;
-  background:#008fa3;
+  background:#008da3;
   color:white;
   font-size:17px;
   font-weight:bold;
 }
 
-.status{
-  margin-top:18px;
-  padding:18px;
-  border-radius:12px;
-  text-align:center;
-  background:#191f27;
-  font-size:20px;
-  font-weight:bold;
-}
-
 audio{
   width:100%;
-  margin-top:20px;
+  margin-top:18px;
 }
 
 .log{
   margin-top:15px;
   background:#05070a;
+  border-radius:12px;
   padding:12px;
-  border-radius:10px;
   height:180px;
   overflow:auto;
+  color:#8eefff;
   font-size:13px;
-  color:#9defff;
 }
 </style>
 </head>
@@ -77,10 +77,10 @@ audio{
 <h1>AVEDOW RECEIVER</h1>
 
 <div id="status" class="status">
-🔴 BELUM TERHUBUNG
+🔴 OFFLINE
 </div>
 
-<button id="connect">
+<button id="connectBtn">
 🔗 HUBUNGKAN TRANSMITTER
 </button>
 
@@ -94,6 +94,7 @@ audio{
 
 </div>
 
+
 <script type="module">
 
 import {
@@ -105,17 +106,18 @@ import {
   ref,
   set,
   onValue,
-  push
+  onChildAdded
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
 /* =====================================
-   FIREBASE CONFIG YANG SAMA
+   FIREBASE CONFIG
+   HARUS SAMA
 ===================================== */
 
 const firebaseConfig = {
 
-  apiKey: "ISI_API_KEY",
+  apiKey:"ISI_API_KEY",
 
   authDomain:
     "ISI_PROJECT.firebaseapp.com",
@@ -138,12 +140,6 @@ const firebaseConfig = {
 };
 
 
-/* ===================================== */
-
-const CHANNEL =
-  "AVEDOW_AUDIO_MAIN";
-
-
 const app =
   initializeApp(firebaseConfig);
 
@@ -151,7 +147,14 @@ const db =
   getDatabase(app);
 
 
+const CHANNEL =
+  "AVEDOW_AUTO_AUDIO";
+
+
 let pc = null;
+let session = null;
+
+let pendingCandidates = [];
 
 
 const status =
@@ -166,11 +169,11 @@ const logBox =
 
 function log(text){
 
-  const waktu =
+  const time =
     new Date().toLocaleTimeString();
 
   logBox.innerHTML +=
-    `[${waktu}] ${text}<br>`;
+    `[${time}] ${text}<br>`;
 
   logBox.scrollTop =
     logBox.scrollHeight;
@@ -186,42 +189,115 @@ function setStatus(text){
 
 
 /* =====================================
-   HUBUNGKAN RECEIVER
+   HUBUNGKAN
 ===================================== */
 
 async function connect(){
 
+  if(pc){
+
+    log(
+      "Receiver sudah aktif."
+    );
+
+    return;
+
+  }
+
+
   setStatus(
     "🟡 MENUNGGU TRANSMITTER"
   );
+
 
   log(
     "Receiver aktif."
   );
 
 
+  /*
+     Pantau session aktif.
+  */
+
+  onValue(
+
+    ref(
+      db,
+      `avedow/${CHANNEL}/activeSession`
+    ),
+
+    async snapshot => {
+
+      const newSession =
+        snapshot.val();
+
+      if(!newSession)
+        return;
+
+
+      if(
+        session === newSession
+      ){
+
+        return;
+
+      }
+
+
+      session =
+        newSession;
+
+
+      log(
+        "Session transmitter ditemukan: " +
+        session
+      );
+
+
+      await createReceiver();
+
+    }
+
+  );
+
+}
+
+
+/* =====================================
+   BUAT RECEIVER
+===================================== */
+
+async function createReceiver(){
+
   pc =
     new RTCPeerConnection({
 
       iceServers:[
+
         {
           urls:
           "stun:stun.l.google.com:19302"
+        },
+
+        {
+          urls:
+          "stun:stun1.l.google.com:19302"
         }
+
       ]
 
     });
 
 
-  /* =================================
+  /* ===================================
      STATUS
-  ================================= */
+  =================================== */
 
   pc.onconnectionstatechange =
   () => {
 
     log(
-      "Koneksi: " +
+      "WebRTC: " +
       pc.connectionState
     );
 
@@ -252,13 +328,23 @@ async function connect(){
 
     if(
       pc.connectionState ===
-      "disconnected" ||
+      "disconnected"
+    ){
+
+      setStatus(
+        "🟠 KONEKSI TERGANGGU"
+      );
+
+    }
+
+
+    if(
       pc.connectionState ===
       "failed"
     ){
 
       setStatus(
-        "🔴 TERPUTUS"
+        "🔴 KONEKSI GAGAL"
       );
 
     }
@@ -266,15 +352,15 @@ async function connect(){
   };
 
 
-  /* =================================
+  /* ===================================
      TERIMA AUDIO
-  ================================= */
+  =================================== */
 
   pc.ontrack =
   event => {
 
     log(
-      "Audio diterima!"
+      "🎵 AUDIO DITERIMA!"
     );
 
 
@@ -294,9 +380,9 @@ async function connect(){
   };
 
 
-  /* =================================
+  /* ===================================
      ICE RECEIVER
-  ================================= */
+  =================================== */
 
   pc.onicecandidate =
   async event => {
@@ -305,11 +391,11 @@ async function connect(){
       return;
 
 
-    await push(
+    await set(
 
       ref(
         db,
-        `avedow/${CHANNEL}/rxCandidates`
+        `avedow/${CHANNEL}/sessions/${session}/rxCandidates/${event.candidate.sdpMLineIndex}_${Date.now()}`
       ),
 
       event.candidate.toJSON()
@@ -319,127 +405,146 @@ async function connect(){
   };
 
 
-  /* =================================
-     DENGARKAN OFFER
-  ================================= */
+  /* ===================================
+     AMBIL OFFER
+  =================================== */
 
-  onValue(
+  const offerSnapshot =
+    await new Promise(resolve => {
 
-    ref(
-      db,
-      `avedow/${CHANNEL}/offer`
-    ),
-
-    async snapshot => {
-
-      const offer =
-        snapshot.val();
-
-      if(!offer)
-        return;
-
-
-      if(
-        pc.signalingState !==
-        "stable"
-      ){
-
-        return;
-
-      }
-
-
-      log(
-        "Transmitter ditemukan!"
-      );
-
-
-      setStatus(
-        "🔵 MENGHUBUNGKAN..."
-      );
-
-
-      await pc.setRemoteDescription(
-        offer
-      );
-
-
-      const answer =
-        await pc.createAnswer();
-
-
-      await pc.setLocalDescription(
-        answer
-      );
-
-
-      await set(
+      onValue(
 
         ref(
           db,
-          `avedow/${CHANNEL}/answer`
+          `avedow/${CHANNEL}/sessions/${session}/offer`
         ),
 
+        snap => {
+
+          if(
+            snap.exists()
+          ){
+
+            resolve(snap);
+
+          }
+
+        },
+
         {
-          type:answer.type,
-          sdp:answer.sdp
+          onlyOnce:true
         }
 
       );
 
+    });
 
-      log(
-        "Jawaban dikirim."
-      );
+
+  const offer =
+    offerSnapshot.val();
+
+
+  if(!offer){
+
+    log(
+      "Offer tidak ditemukan."
+    );
+
+    return;
+
+  }
+
+
+  await pc.setRemoteDescription(
+
+    new RTCSessionDescription(
+      offer
+    )
+
+  );
+
+
+  log(
+    "Remote description siap."
+  );
+
+
+  /*
+     Candidate transmitter.
+     Sekarang remoteDescription sudah siap,
+     jadi candidate aman diproses.
+  */
+
+  onChildAdded(
+
+    ref(
+      db,
+      `avedow/${CHANNEL}/sessions/${session}/txCandidates`
+    ),
+
+    async snapshot => {
+
+      try{
+
+        await pc.addIceCandidate(
+
+          new RTCIceCandidate(
+            snapshot.val()
+          )
+
+        );
+
+      }catch(error){
+
+        log(
+          "ICE error: " +
+          error.message
+        );
+
+      }
 
     }
 
   );
 
 
-  /* =================================
-     DENGARKAN ICE TRANSMITTER
-  ================================= */
+  /* ===================================
+     BUAT ANSWER
+  =================================== */
 
-  onValue(
+  const answer =
+    await pc.createAnswer();
+
+
+  await pc.setLocalDescription(
+    answer
+  );
+
+
+  await set(
 
     ref(
       db,
-      `avedow/${CHANNEL}/txCandidates`
+      `avedow/${CHANNEL}/sessions/${session}/answer`
     ),
 
-    async snapshot => {
-
-      const data =
-        snapshot.val();
-
-      if(!data)
-        return;
-
-
-      for(
-        const key in data
-      ){
-
-        try{
-
-          await pc.addIceCandidate(
-            data[key]
-          );
-
-        }catch(e){}
-
-      }
-
+    {
+      type:answer.type,
+      sdp:answer.sdp
     }
 
+  );
+
+
+  log(
+    "ANSWER dikirim."
   );
 
 }
 
 
 document
-  .getElementById("connect")
+  .getElementById("connectBtn")
   .onclick =
   connect;
 
