@@ -10,7 +10,7 @@
 
 body{
   margin:0;
-  background:#080b10;
+  background:#070a0f;
   color:white;
   font-family:Arial,sans-serif;
   padding:20px;
@@ -19,9 +19,9 @@ body{
 .box{
   max-width:600px;
   margin:auto;
-  background:#11161d;
-  border:1px solid #29313c;
-  border-radius:18px;
+  background:#111720;
+  border:1px solid #26313d;
+  border-radius:22px;
   padding:20px;
 }
 
@@ -30,37 +30,37 @@ h1{
   color:#00e5ff;
 }
 
-button{
-  width:100%;
-  padding:16px;
-  margin-top:12px;
-  border:0;
-  border-radius:12px;
-  background:#008fa3;
-  color:white;
-  font-size:17px;
+.status{
+  padding:20px;
+  margin-top:20px;
+  border-radius:14px;
+  background:#191f27;
+  text-align:center;
+  font-size:21px;
   font-weight:bold;
 }
 
-.status{
-  margin-top:18px;
-  padding:18px;
+button{
+  width:100%;
+  border:0;
+  padding:16px;
+  margin-top:12px;
   border-radius:12px;
-  text-align:center;
-  background:#191f27;
-  font-size:20px;
+  background:#008da3;
+  color:white;
+  font-size:17px;
   font-weight:bold;
 }
 
 .log{
   margin-top:15px;
   background:#05070a;
+  border-radius:12px;
   padding:12px;
-  border-radius:10px;
   height:180px;
   overflow:auto;
+  color:#8eefff;
   font-size:13px;
-  color:#9defff;
 }
 </style>
 </head>
@@ -72,10 +72,10 @@ button{
 <h1>AVEDOW TRANSMITTER</h1>
 
 <div id="status" class="status">
-🔴 BELUM TERHUBUNG
+🔴 OFFLINE
 </div>
 
-<button id="connect">
+<button id="connectBtn">
 🔗 HUBUNGKAN RECEIVER
 </button>
 
@@ -87,6 +87,7 @@ button{
 
 </div>
 
+
 <script type="module">
 
 import {
@@ -97,18 +98,21 @@ import {
   getDatabase,
   ref,
   set,
+  get,
   onValue,
+  onChildAdded,
+  remove,
   push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
 /* =====================================
-   ISI FIREBASE CONFIG KAMU
+   FIREBASE CONFIG
 ===================================== */
 
 const firebaseConfig = {
 
-  apiKey: "ISI_API_KEY",
+  apiKey:"ISI_API_KEY",
 
   authDomain:
     "ISI_PROJECT.firebaseapp.com",
@@ -131,13 +135,7 @@ const firebaseConfig = {
 };
 
 
-/* =====================================
-   CHANNEL AVEDOW
-   TIDAK PERLU DIISI USER
-===================================== */
-
-const CHANNEL = "AVEDOW_AUDIO_MAIN";
-
+/* ===================================== */
 
 const app =
   initializeApp(firebaseConfig);
@@ -146,8 +144,20 @@ const db =
   getDatabase(app);
 
 
+/*
+   CHANNEL TETAP.
+   USER TIDAK PERLU MEMASUKKAN ROOM.
+*/
+
+const CHANNEL =
+  "AVEDOW_AUTO_AUDIO";
+
+
 let pc = null;
 let stream = null;
+let session = null;
+let candidateListener = null;
+let answerListener = null;
 
 
 const status =
@@ -159,11 +169,11 @@ const logBox =
 
 function log(text){
 
-  const waktu =
+  const time =
     new Date().toLocaleTimeString();
 
   logBox.innerHTML +=
-    `[${waktu}] ${text}<br>`;
+    `[${time}] ${text}<br>`;
 
   logBox.scrollTop =
     logBox.scrollHeight;
@@ -183,73 +193,127 @@ function setStatus(text){
 
 async function connect(){
 
-  setStatus("🟡 MENCARI RECEIVER");
+  if(pc){
+    log("Koneksi sudah dibuat.");
+    return;
+  }
 
-  log("Mencari receiver...");
+
+  setStatus(
+    "🟡 MENYIAPKAN..."
+  );
+
+
+  /*
+     Session baru mencegah offer/candidate
+     lama dipakai kembali.
+  */
+
+  session =
+    Date.now().toString();
+
+
+  log(
+    "Session: " + session
+  );
 
 
   pc =
     new RTCPeerConnection({
 
       iceServers:[
+
         {
           urls:
           "stun:stun.l.google.com:19302"
+        },
+
+        {
+          urls:
+          "stun:stun1.l.google.com:19302"
         }
+
       ]
 
     });
 
 
-  pc.onconnectionstatechange = () => {
+  /* ===================================
+     STATUS
+  =================================== */
+
+  pc.onconnectionstatechange =
+  () => {
 
     log(
-      "Koneksi: " +
+      "WebRTC: " +
       pc.connectionState
     );
 
 
-    if(
-      pc.connectionState ===
-      "connecting"
-    ){
+    switch(pc.connectionState){
 
-      setStatus(
-        "🔵 MENGHUBUNGKAN..."
-      );
+      case "new":
 
-    }
+        setStatus(
+          "🟡 MENUNGGU RECEIVER"
+        );
 
-
-    if(
-      pc.connectionState ===
-      "connected"
-    ){
-
-      setStatus(
-        "🟢 TERHUBUNG"
-      );
-
-    }
+        break;
 
 
-    if(
-      pc.connectionState ===
-      "disconnected" ||
-      pc.connectionState ===
-      "failed"
-    ){
+      case "connecting":
 
-      setStatus(
-        "🔴 TERPUTUS"
-      );
+        setStatus(
+          "🔵 MENGHUBUNGKAN..."
+        );
+
+        break;
+
+
+      case "connected":
+
+        setStatus(
+          "🟢 TERHUBUNG"
+        );
+
+        break;
+
+
+      case "disconnected":
+
+        setStatus(
+          "🟠 KONEKSI TERGANGGU"
+        );
+
+        break;
+
+
+      case "failed":
+
+        setStatus(
+          "🔴 KONEKSI GAGAL"
+        );
+
+        break;
+
+
+      case "closed":
+
+        setStatus(
+          "🔴 TERPUTUS"
+        );
+
+        break;
 
     }
 
   };
 
 
-  /* ICE transmitter */
+  /* ===================================
+     ICE TRANSMITTER
+  =================================== */
 
   pc.onicecandidate =
   async event => {
@@ -262,7 +326,7 @@ async function connect(){
 
       ref(
         db,
-        `avedow/${CHANNEL}/txCandidates`
+        `avedow/${CHANNEL}/sessions/${session}/txCandidates`
       ),
 
       event.candidate.toJSON()
@@ -272,13 +336,16 @@ async function connect(){
   };
 
 
-  /* Dengarkan answer */
+  /* ===================================
+     TERIMA ANSWER
+  =================================== */
 
+  answerListener =
   onValue(
 
     ref(
       db,
-      `avedow/${CHANNEL}/answer`
+      `avedow/${CHANNEL}/sessions/${session}/answer`
     ),
 
     async snapshot => {
@@ -292,53 +359,77 @@ async function connect(){
 
       if(
         pc.signalingState !==
-        "stable"
+        "have-local-offer"
       ){
 
-        await pc.setRemoteDescription(
-          answer
-        );
-
-        log(
-          "Receiver ditemukan!"
-        );
+        return;
 
       }
+
+
+      log(
+        "ANSWER RECEIVER diterima."
+      );
+
+
+      await pc.setRemoteDescription(
+        new RTCSessionDescription(
+          answer
+        )
+      );
+
+
+      log(
+        "Remote description siap."
+      );
 
     }
 
   );
 
 
-  /* Dengarkan ICE receiver */
+  /* ===================================
+     TERIMA ICE RECEIVER
+  =================================== */
 
-  onValue(
+  candidateListener =
+  onChildAdded(
 
     ref(
       db,
-      `avedow/${CHANNEL}/rxCandidates`
+      `avedow/${CHANNEL}/sessions/${session}/rxCandidates`
     ),
 
     async snapshot => {
 
-      const data =
-        snapshot.val();
-
-      if(!data)
-        return;
-
-
-      for(
-        const key in data
+      if(
+        !pc ||
+        !pc.remoteDescription
       ){
 
-        try{
+        log(
+          "ICE menunggu remote description..."
+        );
 
-          await pc.addIceCandidate(
-            data[key]
-          );
+        return;
 
-        }catch(e){}
+      }
+
+
+      try{
+
+        await pc.addIceCandidate(
+          new RTCIceCandidate(
+            snapshot.val()
+          )
+        );
+
+      }catch(error){
+
+        log(
+          "ICE error: " +
+          error.message
+        );
 
       }
 
@@ -347,7 +438,9 @@ async function connect(){
   );
 
 
-  /* Buat offer */
+  /* ===================================
+     BUAT OFFER
+  =================================== */
 
   const offer =
     await pc.createOffer();
@@ -362,7 +455,7 @@ async function connect(){
 
     ref(
       db,
-      `avedow/${CHANNEL}/offer`
+      `avedow/${CHANNEL}/sessions/${session}/offer`
     ),
 
     {
@@ -373,7 +466,26 @@ async function connect(){
   );
 
 
-  log("Menunggu receiver...");
+  await set(
+
+    ref(
+      db,
+      `avedow/${CHANNEL}/activeSession`
+    ),
+
+    session
+
+  );
+
+
+  log(
+    "OFFER dikirim."
+  );
+
+
+  setStatus(
+    "🟡 MENUNGGU RECEIVER"
+  );
 
 }
 
@@ -387,7 +499,7 @@ async function startAudio(){
   if(!pc){
 
     alert(
-      "Tekan HUBUNGKAN RECEIVER dahulu."
+      "Tekan HUBUNGKAN RECEIVER dulu."
     );
 
     return;
@@ -411,10 +523,12 @@ async function startAudio(){
       stream.getAudioTracks();
 
 
-    if(tracks.length === 0){
+    if(
+      tracks.length === 0
+    ){
 
       alert(
-        "Audio tidak tersedia. Saat memilih layar/tab, aktifkan Share Audio jika tersedia."
+        "Browser tidak memberikan audio. Saat memilih layar/tab, aktifkan Share Audio jika tersedia."
       );
 
       return;
@@ -422,25 +536,37 @@ async function startAudio(){
     }
 
 
-    tracks.forEach(track => {
+    for(
+      const track of tracks
+    ){
 
       pc.addTrack(
         track,
         stream
       );
 
-    });
+    }
 
 
     log(
-      "Audio berhasil dikirim."
+      "🎵 Audio track berhasil ditambahkan."
     );
+
+
+    tracks[0].onended =
+    () => {
+
+      log(
+        "Audio capture dihentikan."
+      );
+
+    };
 
 
   }catch(error){
 
     log(
-      "Audio gagal: " +
+      "Audio error: " +
       error.message
     );
 
@@ -449,8 +575,43 @@ async function startAudio(){
 }
 
 
+/* =====================================
+   CONTROL COMMAND
+===================================== */
+
+onChildAdded(
+
+  ref(
+    db,
+    `avedow/${CHANNEL}/commands`
+  ),
+
+  snapshot => {
+
+    const command =
+      snapshot.val();
+
+    if(!command)
+      return;
+
+
+    log(
+      "Command: " +
+      command
+    );
+
+    /*
+      Nanti tombol control bisa
+      mengendalikan YouTube/player.
+    */
+
+  }
+
+);
+
+
 document
-  .getElementById("connect")
+  .getElementById("connectBtn")
   .onclick =
   connect;
 
