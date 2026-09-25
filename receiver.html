@@ -30,20 +30,15 @@ h1{
   color:#00e5ff;
 }
 
-input,button{
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:10px;
-  border:1px solid #394451;
-  background:#080b10;
-  color:white;
-  font-size:16px;
-}
-
 button{
-  background:#008fa3;
+  width:100%;
+  padding:16px;
+  margin-top:12px;
   border:0;
+  border-radius:12px;
+  background:#008fa3;
+  color:white;
+  font-size:17px;
   font-weight:bold;
 }
 
@@ -81,29 +76,23 @@ audio{
 
 <h1>AVEDOW RECEIVER</h1>
 
-<input
-  id="room"
-  placeholder="Masukkan ROOM yang sama"
-/>
-
-<button id="connectBtn">
-HUBUNGKAN TRANSMITTER
-</button>
-
 <div id="status" class="status">
-🔴 OFFLINE
+🔴 BELUM TERHUBUNG
 </div>
+
+<button id="connect">
+🔗 HUBUNGKAN TRANSMITTER
+</button>
 
 <audio
   id="audio"
-  autoplay
-  controls>
+  controls
+  autoplay>
 </audio>
 
 <div id="log" class="log"></div>
 
 </div>
-
 
 <script type="module">
 
@@ -120,34 +109,56 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-/* =========================================
-   FIREBASE CONFIG YANG SAMA DENGAN TRANSMITTER
-========================================= */
+/* =====================================
+   FIREBASE CONFIG YANG SAMA
+===================================== */
 
 const firebaseConfig = {
+
   apiKey: "ISI_API_KEY",
-  authDomain: "ISI_PROJECT.firebaseapp.com",
-  databaseURL: "https://ISI_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "ISI_PROJECT",
-  storageBucket: "ISI_PROJECT.appspot.com",
-  messagingSenderId: "ISI_SENDER_ID",
-  appId: "ISI_APP_ID"
+
+  authDomain:
+    "ISI_PROJECT.firebaseapp.com",
+
+  databaseURL:
+    "https://ISI_PROJECT-default-rtdb.firebaseio.com",
+
+  projectId:
+    "ISI_PROJECT",
+
+  storageBucket:
+    "ISI_PROJECT.appspot.com",
+
+  messagingSenderId:
+    "ISI_SENDER_ID",
+
+  appId:
+    "ISI_APP_ID"
+
 };
 
 
-/* ========================================= */
+/* ===================================== */
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const CHANNEL =
+  "AVEDOW_AUDIO_MAIN";
+
+
+const app =
+  initializeApp(firebaseConfig);
+
+const db =
+  getDatabase(app);
+
 
 let pc = null;
-let roomCode = "";
+
+
+const status =
+  document.getElementById("status");
 
 const audio =
   document.getElementById("audio");
-
-const statusBox =
-  document.getElementById("status");
 
 const logBox =
   document.getElementById("log");
@@ -155,47 +166,38 @@ const logBox =
 
 function log(text){
 
-  const time =
+  const waktu =
     new Date().toLocaleTimeString();
 
   logBox.innerHTML +=
-    `[${time}] ${text}<br>`;
+    `[${waktu}] ${text}<br>`;
 
   logBox.scrollTop =
     logBox.scrollHeight;
 }
 
 
-function status(text){
+function setStatus(text){
 
-  statusBox.textContent = text;
+  status.textContent =
+    text;
 
 }
 
 
-/* =========================================
-   MULAI RECEIVER
-========================================= */
+/* =====================================
+   HUBUNGKAN RECEIVER
+===================================== */
 
-async function startReceiver(){
+async function connect(){
 
-  roomCode =
-    document
-      .getElementById("room")
-      .value
-      .trim();
+  setStatus(
+    "🟡 MENUNGGU TRANSMITTER"
+  );
 
-  if(!roomCode){
-
-    alert("Masukkan ROOM terlebih dahulu");
-
-    return;
-  }
-
-
-  status("🟡 MENUNGGU TRANSMITTER");
-
-  log("Receiver aktif");
+  log(
+    "Receiver aktif."
+  );
 
 
   pc =
@@ -211,14 +213,15 @@ async function startReceiver(){
     });
 
 
-  /* =====================================
-     STATUS WEBRTC
-  ===================================== */
+  /* =================================
+     STATUS
+  ================================= */
 
-  pc.onconnectionstatechange = () => {
+  pc.onconnectionstatechange =
+  () => {
 
     log(
-      "WebRTC: " +
+      "Koneksi: " +
       pc.connectionState
     );
 
@@ -228,7 +231,7 @@ async function startReceiver(){
       "connecting"
     ){
 
-      status(
+      setStatus(
         "🔵 MENGHUBUNGKAN..."
       );
 
@@ -240,7 +243,7 @@ async function startReceiver(){
       "connected"
     ){
 
-      status(
+      setStatus(
         "🟢 TERHUBUNG"
       );
 
@@ -251,12 +254,10 @@ async function startReceiver(){
       pc.connectionState ===
       "disconnected" ||
       pc.connectionState ===
-      "failed" ||
-      pc.connectionState ===
-      "closed"
+      "failed"
     ){
 
-      status(
+      setStatus(
         "🔴 TERPUTUS"
       );
 
@@ -265,33 +266,27 @@ async function startReceiver(){
   };
 
 
-  pc.oniceconnectionstatechange =
-  () => {
+  /* =================================
+     TERIMA AUDIO
+  ================================= */
+
+  pc.ontrack =
+  event => {
 
     log(
-      "ICE: " +
-      pc.iceConnectionState
+      "Audio diterima!"
     );
 
-  };
-
-
-  /* =====================================
-     AUDIO DARI TRANSMITTER
-  ===================================== */
-
-  pc.ontrack = event => {
-
-    log("Audio dari transmitter diterima");
 
     audio.srcObject =
       event.streams[0];
+
 
     audio.play()
       .catch(() => {
 
         log(
-          "Tekan tombol play pada audio"
+          "Tekan PLAY pada audio."
         );
 
       });
@@ -299,37 +294,40 @@ async function startReceiver(){
   };
 
 
-  /* =====================================
+  /* =================================
      ICE RECEIVER
-  ===================================== */
+  ================================= */
 
   pc.onicecandidate =
   async event => {
 
-    if(event.candidate){
+    if(!event.candidate)
+      return;
 
-      await push(
-        ref(
-          db,
-          `avedow/${roomCode}/receiverCandidates`
-        ),
-        event.candidate.toJSON()
-      );
 
-    }
+    await push(
+
+      ref(
+        db,
+        `avedow/${CHANNEL}/rxCandidates`
+      ),
+
+      event.candidate.toJSON()
+
+    );
 
   };
 
 
-  /* =====================================
-     DENGARKAN OFFER TRANSMITTER
-  ===================================== */
+  /* =================================
+     DENGARKAN OFFER
+  ================================= */
 
   onValue(
 
     ref(
       db,
-      `avedow/${roomCode}/transmitterOffer`
+      `avedow/${CHANNEL}/offer`
     ),
 
     async snapshot => {
@@ -337,7 +335,8 @@ async function startReceiver(){
       const offer =
         snapshot.val();
 
-      if(!offer) return;
+      if(!offer)
+        return;
 
 
       if(
@@ -351,20 +350,17 @@ async function startReceiver(){
 
 
       log(
-        "OFFER dari transmitter diterima"
+        "Transmitter ditemukan!"
       );
 
-      status(
+
+      setStatus(
         "🔵 MENGHUBUNGKAN..."
       );
 
 
       await pc.setRemoteDescription(
-
-        new RTCSessionDescription(
-          offer
-        )
-
+        offer
       );
 
 
@@ -381,19 +377,19 @@ async function startReceiver(){
 
         ref(
           db,
-          `avedow/${roomCode}/receiverAnswer`
+          `avedow/${CHANNEL}/answer`
         ),
 
         {
-          type: answer.type,
-          sdp: answer.sdp
+          type:answer.type,
+          sdp:answer.sdp
         }
 
       );
 
 
       log(
-        "ANSWER dikirim ke transmitter"
+        "Jawaban dikirim."
       );
 
     }
@@ -401,15 +397,15 @@ async function startReceiver(){
   );
 
 
-  /* =====================================
+  /* =================================
      DENGARKAN ICE TRANSMITTER
-  ===================================== */
+  ================================= */
 
   onValue(
 
     ref(
       db,
-      `avedow/${roomCode}/transmitterCandidates`
+      `avedow/${CHANNEL}/txCandidates`
     ),
 
     async snapshot => {
@@ -417,7 +413,8 @@ async function startReceiver(){
       const data =
         snapshot.val();
 
-      if(!data) return;
+      if(!data)
+        return;
 
 
       for(
@@ -427,18 +424,10 @@ async function startReceiver(){
         try{
 
           await pc.addIceCandidate(
-
-            new RTCIceCandidate(
-              data[key]
-            )
-
+            data[key]
           );
 
-        }catch(error){
-
-          console.log(error);
-
-        }
+        }catch(e){}
 
       }
 
@@ -450,9 +439,9 @@ async function startReceiver(){
 
 
 document
-  .getElementById("connectBtn")
+  .getElementById("connect")
   .onclick =
-  startReceiver;
+  connect;
 
 </script>
 
