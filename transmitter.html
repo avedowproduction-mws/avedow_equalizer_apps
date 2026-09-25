@@ -7,13 +7,15 @@
 
 <style>
 *{box-sizing:border-box}
+
 body{
   margin:0;
   background:#080b10;
-  color:#fff;
+  color:white;
   font-family:Arial,sans-serif;
   padding:20px;
 }
+
 .box{
   max-width:600px;
   margin:auto;
@@ -22,25 +24,24 @@ body{
   border-radius:18px;
   padding:20px;
 }
+
 h1{
   text-align:center;
   color:#00e5ff;
 }
-input,button{
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:10px;
-  border:1px solid #394451;
-  background:#080b10;
-  color:white;
-  font-size:16px;
-}
+
 button{
-  background:#008fa3;
+  width:100%;
+  padding:16px;
+  margin-top:12px;
   border:0;
+  border-radius:12px;
+  background:#008fa3;
+  color:white;
+  font-size:17px;
   font-weight:bold;
 }
+
 .status{
   margin-top:18px;
   padding:18px;
@@ -50,6 +51,7 @@ button{
   font-size:20px;
   font-weight:bold;
 }
+
 .log{
   margin-top:15px;
   background:#05070a;
@@ -69,16 +71,16 @@ button{
 
 <h1>AVEDOW TRANSMITTER</h1>
 
-<input id="room" placeholder="Masukkan ROOM, contoh: AVEDOW123">
-
-<button id="connectBtn">HUBUNGKAN RECEIVER</button>
-
 <div id="status" class="status">
-🔴 OFFLINE
+🔴 BELUM TERHUBUNG
 </div>
 
-<button id="captureBtn">
-AKTIFKAN AUDIO STREAM
+<button id="connect">
+🔗 HUBUNGKAN RECEIVER
+</button>
+
+<button id="audioBtn">
+🎵 AKTIFKAN AUDIO
 </button>
 
 <div id="log" class="log"></div>
@@ -95,142 +97,151 @@ import {
   getDatabase,
   ref,
   set,
-  get,
   onValue,
-  push,
-  remove
+  push
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-/* =========================================
-   MASUKKAN FIREBASE CONFIG KAMU DI SINI
-========================================= */
+/* =====================================
+   ISI FIREBASE CONFIG KAMU
+===================================== */
 
 const firebaseConfig = {
+
   apiKey: "ISI_API_KEY",
-  authDomain: "ISI_PROJECT.firebaseapp.com",
-  databaseURL: "https://ISI_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "ISI_PROJECT",
-  storageBucket: "ISI_PROJECT.appspot.com",
-  messagingSenderId: "ISI_SENDER_ID",
-  appId: "ISI_APP_ID"
+
+  authDomain:
+    "ISI_PROJECT.firebaseapp.com",
+
+  databaseURL:
+    "https://ISI_PROJECT-default-rtdb.firebaseio.com",
+
+  projectId:
+    "ISI_PROJECT",
+
+  storageBucket:
+    "ISI_PROJECT.appspot.com",
+
+  messagingSenderId:
+    "ISI_SENDER_ID",
+
+  appId:
+    "ISI_APP_ID"
+
 };
 
 
-/* ========================================= */
+/* =====================================
+   CHANNEL AVEDOW
+   TIDAK PERLU DIISI USER
+===================================== */
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const CHANNEL = "AVEDOW_AUDIO_MAIN";
+
+
+const app =
+  initializeApp(firebaseConfig);
+
+const db =
+  getDatabase(app);
+
 
 let pc = null;
-let localStream = null;
-let roomCode = "";
-let connected = false;
+let stream = null;
 
-const statusBox = document.getElementById("status");
-const logBox = document.getElementById("log");
+
+const status =
+  document.getElementById("status");
+
+const logBox =
+  document.getElementById("log");
 
 
 function log(text){
-  const time = new Date().toLocaleTimeString();
-  logBox.innerHTML += `[${time}] ${text}<br>`;
-  logBox.scrollTop = logBox.scrollHeight;
+
+  const waktu =
+    new Date().toLocaleTimeString();
+
+  logBox.innerHTML +=
+    `[${waktu}] ${text}<br>`;
+
+  logBox.scrollTop =
+    logBox.scrollHeight;
 }
 
 
-function status(text){
-  statusBox.textContent = text;
+function setStatus(text){
+
+  status.textContent = text;
+
 }
 
 
-function setConnectionState(state){
+/* =====================================
+   HUBUNGKAN
+===================================== */
 
-  if(state === "waiting"){
-    status("🟡 MENUNGGU RECEIVER");
-  }
+async function connect(){
 
-  if(state === "connecting"){
-    status("🔵 MENGHUBUNGKAN...");
-  }
+  setStatus("🟡 MENCARI RECEIVER");
 
-  if(state === "connected"){
-    status("🟢 TERHUBUNG");
-    connected = true;
-  }
-
-  if(state === "disconnected"){
-    status("🔴 TERPUTUS");
-    connected = false;
-  }
-}
+  log("Mencari receiver...");
 
 
-/* =========================================
-   BUAT WEBRTC
-========================================= */
+  pc =
+    new RTCPeerConnection({
 
-async function createConnection(){
+      iceServers:[
+        {
+          urls:
+          "stun:stun.l.google.com:19302"
+        }
+      ]
 
-  roomCode =
-    document.getElementById("room").value.trim();
-
-  if(!roomCode){
-    alert("Masukkan ROOM terlebih dahulu");
-    return;
-  }
-
-  setConnectionState("waiting");
-
-  log("Membuat koneksi WebRTC...");
-  
-  pc = new RTCPeerConnection({
-    iceServers:[
-      {
-        urls:"stun:stun.l.google.com:19302"
-      }
-    ]
-  });
+    });
 
 
   pc.onconnectionstatechange = () => {
 
-    log("WebRTC: " + pc.connectionState);
+    log(
+      "Koneksi: " +
+      pc.connectionState
+    );
 
-    if(pc.connectionState === "connecting"){
-      setConnectionState("connecting");
-    }
-
-    if(pc.connectionState === "connected"){
-      setConnectionState("connected");
-    }
 
     if(
-      pc.connectionState === "disconnected" ||
-      pc.connectionState === "failed" ||
-      pc.connectionState === "closed"
+      pc.connectionState ===
+      "connecting"
     ){
-      setConnectionState("disconnected");
+
+      setStatus(
+        "🔵 MENGHUBUNGKAN..."
+      );
+
     }
-  };
 
 
-  pc.oniceconnectionstatechange = () => {
-    log("ICE: " + pc.iceConnectionState);
-  };
+    if(
+      pc.connectionState ===
+      "connected"
+    ){
+
+      setStatus(
+        "🟢 TERHUBUNG"
+      );
+
+    }
 
 
-  /* ICE transmitter */
+    if(
+      pc.connectionState ===
+      "disconnected" ||
+      pc.connectionState ===
+      "failed"
+    ){
 
-  pc.onicecandidate = async event => {
-
-    if(event.candidate){
-
-      await push(
-        ref(
-          db,
-          `avedow/${roomCode}/transmitterCandidates`
-        ),
-        event.candidate.toJSON()
+      setStatus(
+        "🔴 TERPUTUS"
       );
 
     }
@@ -238,110 +249,157 @@ async function createConnection(){
   };
 
 
-  /* Tunggu answer dari receiver */
+  /* ICE transmitter */
+
+  pc.onicecandidate =
+  async event => {
+
+    if(!event.candidate)
+      return;
+
+
+    await push(
+
+      ref(
+        db,
+        `avedow/${CHANNEL}/txCandidates`
+      ),
+
+      event.candidate.toJSON()
+
+    );
+
+  };
+
+
+  /* Dengarkan answer */
 
   onValue(
+
     ref(
       db,
-      `avedow/${roomCode}/receiverAnswer`
+      `avedow/${CHANNEL}/answer`
     ),
+
     async snapshot => {
 
-      const answer = snapshot.val();
+      const answer =
+        snapshot.val();
+
+      if(!answer)
+        return;
+
 
       if(
-        answer &&
-        pc &&
-        pc.signalingState !== "stable"
+        pc.signalingState !==
+        "stable"
       ){
 
-        log("Answer RECEIVER diterima");
-
         await pc.setRemoteDescription(
-          new RTCSessionDescription(answer)
+          answer
+        );
+
+        log(
+          "Receiver ditemukan!"
         );
 
       }
 
     }
+
   );
 
 
-  /* Terima ICE candidate dari receiver */
+  /* Dengarkan ICE receiver */
 
   onValue(
+
     ref(
       db,
-      `avedow/${roomCode}/receiverCandidates`
+      `avedow/${CHANNEL}/rxCandidates`
     ),
+
     async snapshot => {
 
-      const data = snapshot.val();
+      const data =
+        snapshot.val();
 
-      if(!data) return;
+      if(!data)
+        return;
 
-      for(const key in data){
+
+      for(
+        const key in data
+      ){
 
         try{
 
           await pc.addIceCandidate(
-            new RTCIceCandidate(data[key])
+            data[key]
           );
 
-        }catch(e){
-
-          console.log(e);
-
-        }
+        }catch(e){}
 
       }
 
     }
+
   );
 
 
-  /* Buat OFFER */
+  /* Buat offer */
 
   const offer =
     await pc.createOffer();
 
-  await pc.setLocalDescription(offer);
 
-
-  await set(
-    ref(
-      db,
-      `avedow/${roomCode}/transmitterOffer`
-    ),
-    {
-      type: offer.type,
-      sdp: offer.sdp
-    }
+  await pc.setLocalDescription(
+    offer
   );
 
 
-  log("OFFER dikirim");
-  log("Sekarang buka RECEIVER dengan ROOM yang sama");
+  await set(
+
+    ref(
+      db,
+      `avedow/${CHANNEL}/offer`
+    ),
+
+    {
+      type:offer.type,
+      sdp:offer.sdp
+    }
+
+  );
+
+
+  log("Menunggu receiver...");
 
 }
 
 
-/* =========================================
-   AUDIO CAPTURE
-========================================= */
+/* =====================================
+   AUDIO
+===================================== */
 
 async function startAudio(){
 
   if(!pc){
-    alert("Hubungkan receiver terlebih dahulu");
+
+    alert(
+      "Tekan HUBUNGKAN RECEIVER dahulu."
+    );
+
     return;
+
   }
 
 
   try{
 
-    localStream =
-      await navigator.mediaDevices.getDisplayMedia({
+    stream =
+      await navigator.mediaDevices
+      .getDisplayMedia({
 
         video:true,
         audio:true
@@ -350,18 +408,17 @@ async function startAudio(){
 
 
     const tracks =
-      localStream.getAudioTracks();
+      stream.getAudioTracks();
 
 
     if(tracks.length === 0){
 
       alert(
-        "Browser tidak memberikan audio. Saat memilih layar/tab, aktifkan SHARE AUDIO jika tersedia."
+        "Audio tidak tersedia. Saat memilih layar/tab, aktifkan Share Audio jika tersedia."
       );
 
-      log("Tidak ada audio track");
-
       return;
+
     }
 
 
@@ -369,28 +426,23 @@ async function startAudio(){
 
       pc.addTrack(
         track,
-        localStream
+        stream
       );
 
     });
 
 
-    log("Audio track berhasil ditambahkan");
+    log(
+      "Audio berhasil dikirim."
+    );
 
-
-    /* Jika user menghentikan capture */
-
-    tracks[0].onended = () => {
-
-      log("Audio capture dihentikan");
-
-    };
 
   }catch(error){
 
-    log("Gagal capture: " + error.message);
-
-    alert(error.message);
+    log(
+      "Audio gagal: " +
+      error.message
+    );
 
   }
 
@@ -398,13 +450,15 @@ async function startAudio(){
 
 
 document
-  .getElementById("connectBtn")
-  .onclick = createConnection;
+  .getElementById("connect")
+  .onclick =
+  connect;
 
 
 document
-  .getElementById("captureBtn")
-  .onclick = startAudio;
+  .getElementById("audioBtn")
+  .onclick =
+  startAudio;
 
 </script>
 
