@@ -2,138 +2,77 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>AVEDOW RECEIVER</title>
 
 <style>
 
 *{
- box-sizing:border-box;
+  box-sizing:border-box;
 }
 
 body{
- margin:0;
- background:#070a0f;
- color:white;
- font-family:Arial,sans-serif;
+  margin:0;
+  background:#070a0f;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:15px;
 }
 
-header{
- padding:18px;
- text-align:center;
- background:#10151c;
- border-bottom:1px solid #27303c;
+.app{
+  max-width:1000px;
+  margin:auto;
 }
 
 h1{
- margin:0;
- font-size:24px;
-}
-
-.sub{
- color:#8995a5;
- font-size:12px;
- margin-top:5px;
-}
-
-.wrap{
- max-width:850px;
- margin:auto;
- padding:15px;
+  text-align:center;
+  letter-spacing:4px;
 }
 
 .card{
- background:#111720;
- border:1px solid #28313c;
- border-radius:15px;
- padding:15px;
- margin-bottom:15px;
-}
-
-input{
- width:100%;
- padding:13px;
- border-radius:10px;
- border:1px solid #384351;
- background:#080c11;
- color:white;
-}
-
-button{
- padding:12px 16px;
- border:0;
- border-radius:9px;
- background:#263241;
- color:white;
- font-weight:bold;
- margin:4px;
-}
-
-.primary{
- background:#1677ff;
-}
-
-.green{
- background:#087f5b;
+  background:#111720;
+  border:1px solid #293444;
+  border-radius:15px;
+  padding:15px;
+  margin:12px 0;
 }
 
 .status{
- padding:12px;
- border-radius:10px;
- background:#171d26;
- text-align:center;
- margin-top:10px;
-}
-
-.song{
- text-align:center;
- font-size:18px;
- color:#4da3ff;
+  background:#080c12;
+  padding:12px;
+  border-radius:9px;
 }
 
 .eq{
- display:grid;
- grid-template-columns:repeat(10,1fr);
- gap:7px;
- height:260px;
- align-items:center;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
 }
 
 .band{
- display:flex;
- flex-direction:column;
- align-items:center;
- gap:7px;
+  text-align:center;
 }
 
 .band input{
- writing-mode:vertical-lr;
- direction:rtl;
- height:190px;
- width:25px;
- padding:0;
+  writing-mode:vertical-lr;
+  direction:rtl;
+  height:150px;
 }
 
-.freq{
- font-size:10px;
- color:#8d98a8;
+label{
+  display:block;
+  font-size:12px;
+}
+
+input[type=range]{
+  width:100%;
 }
 
 canvas{
- width:100%;
- height:180px;
- background:#05070a;
- border-radius:10px;
-}
-
-.slider{
- width:100%;
-}
-
-h2{
- font-size:15px;
- margin-top:0;
+  width:100%;
+  height:220px;
+  background:#020406;
+  border-radius:10px;
 }
 
 </style>
@@ -141,771 +80,488 @@ h2{
 
 <body>
 
-<header>
+<div class="app">
 
 <h1>AVEDOW RECEIVER</h1>
 
-<div class="sub">
-AUDIO DSP RECEIVER
+<div class="card">
+
+<h3>CONNECTION</h3>
+
+<div id="status" class="status">
+Menunggu audio...
 </div>
 
-</header>
+</div>
 
-<div class="wrap">
 
 <div class="card">
 
-<h2>ROOM</h2>
+<h3>10 BAND EQ</h3>
 
-<button
-class="primary"
-onclick="createRoom()">
-CREATE ROOM
-</button>
+<div class="eq">
 
-<div
-id="roomCode"
-style="
-font-size:30px;
-text-align:center;
-margin:15px;
-letter-spacing:5px;
-">
-------
+<script>
+
+const frequencies = [
+31,63,125,250,500,
+1000,2000,4000,8000,16000
+];
+
+frequencies.forEach((f,i)=>{
+
+document.write(`
+<div class="band">
+
+<label>${f} Hz</label>
+
+<input
+type="range"
+min="-12"
+max="12"
+value="0"
+id="eq${i}"
+>
+
+</div>
+`);
+
+});
+
+</script>
+
 </div>
 
-<div
-id="status"
-class="status">
-WAITING
 </div>
 
-</div>
 
 <div class="card">
 
-<h2>NOW PLAYING</h2>
-
-<div
-id="song"
-class="song">
-Belum menerima lagu
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>SPECTRUM ANALYZER</h2>
+<h3>SPECTRUM</h3>
 
 <canvas id="spectrum"></canvas>
 
 </div>
 
-<div class="card">
-
-<h2>10 BAND EQUALIZER</h2>
-
-<div
-id="eq"
-class="eq">
-</div>
-
-</div>
 
 <div class="card">
 
-<h2>COMPRESSOR</h2>
-
-<input
-id="compressor"
-class="slider"
-type="range"
-min="0"
-max="100"
-value="50"
-oninput="updateDSP()">
-
-</div>
-
-<div class="card">
-
-<h2>REVERB</h2>
-
-<input
-id="reverb"
-class="slider"
-type="range"
-min="0"
-max="100"
-value="0"
-oninput="updateDSP()">
-
-</div>
-
-<div class="card">
-
-<h2>DELAY</h2>
-
-<input
-id="delay"
-class="slider"
-type="range"
-min="0"
-max="100"
-value="0"
-oninput="updateDSP()">
-
-</div>
-
-<div class="card">
-
-<h2>MASTER</h2>
+<h3>MASTER</h3>
 
 <input
 id="master"
-class="slider"
 type="range"
 min="0"
-max="100"
-value="100"
-oninput="updateDSP()">
+max="1"
+step="0.01"
+value="1"
+>
+
+<h3>COMPRESSOR</h3>
+
+<input
+id="compressor"
+type="range"
+min="0"
+max="1"
+step="0.01"
+value="0.5"
+>
+
+<h3>REVERB / DELAY</h3>
+
+<input
+id="delay"
+type="range"
+min="0"
+max="1"
+step="0.01"
+value="0.25"
+>
 
 </div>
 
+<audio
+id="audio"
+autoplay
+controls
+style="width:100%">
+</audio>
+
 </div>
 
-<script type="module">
 
-import {
- initializeApp
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+<script>
 
-import {
- getDatabase,
- ref,
- set,
- get,
- onValue
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+let audioContext;
 
+let source;
 
-/* =================================
-   FIREBASE CONFIG
-================================= */
+let analyser;
 
-const firebaseConfig={
+let master;
 
- apiKey:"YOUR_FIREBASE_API_KEY",
+let compressor;
 
- authDomain:
- "YOUR_PROJECT.firebaseapp.com",
+let delay;
 
- databaseURL:
- "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+let delayGain;
 
- projectId:
- "YOUR_PROJECT",
+let eqNodes = [];
 
- storageBucket:
- "YOUR_PROJECT.firebasestorage.app",
 
- messagingSenderId:
- "YOUR_SENDER_ID",
+// ============================
+// AUDIO ENGINE
+// ============================
 
- appId:
- "YOUR_APP_ID"
+function createAudioEngine(stream){
 
-};
+  audioContext =
+    new (
+      window.AudioContext ||
+      window.webkitAudioContext
+    )();
 
-const app=initializeApp(firebaseConfig);
 
-const db=getDatabase(app);
-
-
-/* =================================
-   VARIABLES
-================================= */
-
-let roomCode="";
-let peer=null;
-
-let audioContext=null;
-
-let source=null;
-
-let analyser=null;
-
-let masterGain=null;
-
-let compressorNode=null;
-
-let delayNode=null;
-
-let delayGain=null;
-
-let eqNodes=[];
-
-
-/* =================================
-   EQ FREQUENCIES
-================================= */
-
-const frequencies=[
- 31,
- 63,
- 125,
- 250,
- 500,
- 1000,
- 2000,
- 4000,
- 8000,
- 16000
-];
-
-
-/* =================================
-   CREATE EQ
-================================= */
-
-const eqBox=
- document.getElementById("eq");
-
-frequencies.forEach((freq,i)=>{
-
- const div=
- document.createElement("div");
-
- div.className="band";
-
- div.innerHTML=`
-
- <input
- id="eq${i}"
- type="range"
- min="-12"
- max="12"
- value="0"
- step="0.5">
-
- <div class="freq">
- ${freq>=1000 ? freq/1000+"k" : freq}
- </div>
-
- `;
-
- eqBox.appendChild(div);
-
-});
-
-
-/* =================================
-   CREATE ROOM
-================================= */
-
-window.createRoom=async function(){
-
- roomCode=
- Math.random()
- .toString(36)
- .substring(2,8)
- .toUpperCase();
-
- document.getElementById("roomCode")
- .innerText=roomCode;
-
- await set(
-  ref(db,"rooms/"+roomCode),
-  {
-   receiver:true,
-   online:true,
-   created:Date.now()
-  }
- );
-
- document.getElementById("status")
- .innerText=
- "WAITING FOR TRANSMITTER";
-
- startReceiver();
-
-};
-
-
-/* =================================
-   WEBRTC RECEIVER
-================================= */
-
-async function startReceiver(){
-
- peer=
- new RTCPeerConnection({
-
-  iceServers:[
-   {
-    urls:"stun:stun.l.google.com:19302"
-   }
-  ]
-
- });
-
-
- peer.ontrack=event=>{
-
-  const stream=event.streams[0];
-
-  setupAudio(stream);
-
- };
-
-
- peer.onicecandidate=async event=>{
-
-  if(event.candidate){
-
-   await set(
-    ref(
-     db,
-     "rooms/"+roomCode+
-     "/receiverCandidates/"+
-     Date.now()
-    ),
-    event.candidate.toJSON()
-   );
-
-  }
-
- };
-
-
- const offer=
- await peer.createOffer({
-  offerToReceiveAudio:true
- });
-
- await peer.setLocalDescription(offer);
-
-
- await set(
-  ref(
-   db,
-   "rooms/"+roomCode+
-   "/receiverOffer"
-  ),
-  {
-   type:offer.type,
-   sdp:offer.sdp
-  }
- );
-
-
- onValue(
-  ref(
-   db,
-   "rooms/"+roomCode+
-   "/transmitterAnswer"
-  ),
-  async snap=>{
-
-   const answer=snap.val();
-
-   if(!answer) return;
-
-   if(
-    peer.signalingState !==
-    "stable"
-   ){
-
-    await peer.setRemoteDescription(
-     answer
+  source =
+    audioContext.createMediaStreamSource(
+      stream
     );
 
-    document.getElementById("status")
-     .innerText="CONNECTED";
 
-   }
+  // 10 BAND EQ
 
-  }
- );
+  frequencies.forEach((frequency,i)=>{
 
+    const filter =
+      audioContext.createBiquadFilter();
 
- onValue(
-  ref(
-   db,
-   "rooms/"+roomCode+
-   "/transmitterCandidates"
-  ),
-  snap=>{
+    filter.type =
+      "peaking";
 
-   snap.forEach(async child=>{
+    filter.frequency.value =
+      frequency;
 
-    try{
+    filter.Q.value =
+      1;
 
-     await peer.addIceCandidate(
-      new RTCIceCandidate(
-       child.val()
-      )
-     );
+    filter.gain.value =
+      0;
 
-    }catch(e){}
+    eqNodes.push(filter);
 
-   });
-
-  }
- );
+  });
 
 
- listenCommands();
+  // COMPRESSOR
+
+  compressor =
+    audioContext.createDynamicsCompressor();
+
+  compressor.threshold.value =
+    -24;
+
+  compressor.knee.value =
+    20;
+
+  compressor.ratio.value =
+    8;
+
+  compressor.attack.value =
+    0.003;
+
+  compressor.release.value =
+    0.25;
+
+
+  // DELAY
+
+  delay =
+    audioContext.createDelay(2);
+
+  delay.delayTime.value =
+    0.18;
+
+
+  delayGain =
+    audioContext.createGain();
+
+  delayGain.gain.value =
+    0.25;
+
+
+  // ANALYSER
+
+  analyser =
+    audioContext.createAnalyser();
+
+  analyser.fftSize =
+    2048;
+
+
+  // MASTER
+
+  master =
+    audioContext.createGain();
+
+  master.gain.value =
+    1;
+
+
+  // ============================
+  // ROUTING
+  // ============================
+
+  let node = source;
+
+
+  eqNodes.forEach(filter =>{
+
+    node.connect(filter);
+
+    node = filter;
+
+  });
+
+
+  node.connect(compressor);
+
+
+  compressor.connect(delay);
+
+  delay.connect(delayGain);
+
+  delayGain.connect(master);
+
+
+  compressor.connect(master);
+
+
+  master.connect(analyser);
+
+  analyser.connect(
+    audioContext.destination
+  );
+
+
+  setupControls();
+
+  drawSpectrum();
+
+
+  document.getElementById("status")
+    .textContent =
+    "Audio diterima dan DSP aktif.";
 
 }
 
 
-/* =================================
-   AUDIO DSP
-================================= */
+// ============================
+// CONTROLS
+// ============================
 
-async function setupAudio(stream){
+function setupControls(){
 
- if(audioContext)
-  await audioContext.close();
+  frequencies.forEach((f,i)=>{
 
- audioContext=
- new AudioContext();
+    document
+      .getElementById("eq"+i)
+      .addEventListener(
+        "input",
+        function(){
 
- source=
- audioContext.createMediaStreamSource(
-  stream
- );
+          eqNodes[i].gain.value =
+            Number(this.value);
 
+        }
+      );
 
- /* EQ */
-
- eqNodes=[];
-
- frequencies.forEach(freq=>{
-
-  const filter=
-   audioContext.createBiquadFilter();
-
-  filter.type="peaking";
-
-  filter.frequency.value=freq;
-
-  filter.Q.value=1;
-
-  filter.gain.value=0;
-
-  eqNodes.push(filter);
-
- });
+  });
 
 
- /* COMPRESSOR */
+  document
+    .getElementById("master")
+    .addEventListener(
+      "input",
+      function(){
 
- compressorNode=
-  audioContext.createDynamicsCompressor();
+        master.gain.value =
+          Number(this.value);
 
- compressorNode.threshold.value=-24;
-
- compressorNode.knee.value=30;
-
- compressorNode.ratio.value=4;
-
- compressorNode.attack.value=0.003;
-
- compressorNode.release.value=0.25;
+      }
+    );
 
 
- /* DELAY */
+  document
+    .getElementById("delay")
+    .addEventListener(
+      "input",
+      function(){
 
- delayNode=
-  audioContext.createDelay(1);
+        delayGain.gain.value =
+          Number(this.value);
 
- delayNode.delayTime.value=0.2;
-
-
- delayGain=
-  audioContext.createGain();
-
- delayGain.gain.value=0;
-
-
- /* MASTER */
-
- masterGain=
-  audioContext.createGain();
-
- masterGain.gain.value=1;
+      }
+    );
 
 
- /* ANALYSER */
+  document
+    .getElementById("compressor")
+    .addEventListener(
+      "input",
+      function(){
 
- analyser=
-  audioContext.createAnalyser();
+        const value =
+          Number(this.value);
 
- analyser.fftSize=2048;
+        compressor.ratio.value =
+          1 + value * 19;
 
-
- /* CONNECT EQ */
-
- let current=source;
-
- eqNodes.forEach(node=>{
-
-  current.connect(node);
-
-  current=node;
-
- });
-
-
- current.connect(compressorNode);
-
- compressorNode.connect(analyser);
-
- analyser.connect(masterGain);
-
- compressorNode.connect(delayNode);
-
- delayNode.connect(delayGain);
-
- delayGain.connect(masterGain);
-
- masterGain.connect(
-  audioContext.destination
- );
-
-
- drawSpectrum();
+      }
+    );
 
 }
 
 
-/* =================================
-   DSP CONTROLS
-================================= */
-
-window.updateDSP=function(){
-
- if(!audioContext)
-  return;
-
-
- frequencies.forEach((freq,i)=>{
-
-  const value=
-   Number(
-    document.getElementById("eq"+i)
-    .value
-   );
-
-  if(eqNodes[i])
-   eqNodes[i].gain.value=value;
-
- });
-
-
- const comp=
-  Number(
-   document.getElementById("compressor")
-   .value
-  );
-
-
- if(compressorNode){
-
-  compressorNode.threshold.value=
-   -5-(comp*0.5);
-
- }
-
-
- const rev=
-  Number(
-   document.getElementById("reverb")
-   .value
-  );
-
-
- /* Reverb simulation */
-
- if(delayGain){
-
-  delayGain.gain.value=
-   rev/100*0.5;
-
- }
-
-
- const del=
-  Number(
-   document.getElementById("delay")
-   .value
-  );
-
-
- if(delayNode){
-
-  delayNode.delayTime.value=
-   del/100*0.7;
-
- }
-
-
- const master=
-  Number(
-   document.getElementById("master")
-   .value
-  );
-
-
- if(masterGain){
-
-  masterGain.gain.value=
-   master/100;
-
- }
-
-};
-
-
-/* =================================
-   SPECTRUM
-================================= */
+// ============================
+// SPECTRUM
+// ============================
 
 function drawSpectrum(){
 
- const canvas=
-  document.getElementById("spectrum");
+  const canvas =
+    document.getElementById(
+      "spectrum"
+    );
 
- const ctx=
-  canvas.getContext("2d");
-
- function draw(){
-
-  requestAnimationFrame(draw);
-
-  if(!analyser)
-   return;
-
-  const buffer=
-   new Uint8Array(
-    analyser.frequencyBinCount
-   );
-
-  analyser.getByteFrequencyData(
-   buffer
-  );
-
-  ctx.clearRect(
-   0,
-   0,
-   canvas.width,
-   canvas.height
-  );
-
-  const barWidth=
-   canvas.width/
-   buffer.length*3;
-
-  let x=0;
-
-  for(let i=0;
-      i<buffer.length;
-      i+=3){
-
-   const h=
-    buffer[i]/
-    255*
-    canvas.height;
-
-   ctx.fillRect(
-    x,
-    canvas.height-h,
-    barWidth,
-    h
-   );
-
-   x+=barWidth+1;
-
-  }
-
- }
-
- draw();
-
-}
+  const ctx =
+    canvas.getContext("2d");
 
 
-/* =================================
-   REMOTE COMMANDS
-================================= */
+  function draw(){
 
-function listenCommands(){
+    requestAnimationFrame(draw);
 
- onValue(
-  ref(
-   db,
-   "rooms/"+roomCode+"/command"
-  ),
-  snap=>{
-
-   const cmd=snap.val();
-
-   if(!cmd)
-    return;
+    if(!analyser)
+      return;
 
 
-   if(cmd.type==="load"){
-
-    document.getElementById("song")
-     .innerText=
-      cmd.data?.title ||
-      "YouTube";
-
-   }
+    const buffer =
+      new Uint8Array(
+        analyser.frequencyBinCount
+      );
 
 
-   if(cmd.type==="play"){
-
-    /* Audio stream itself
-       continues through WebRTC */
-
-   }
+    analyser.getByteFrequencyData(
+      buffer
+    );
 
 
-   if(cmd.type==="pause"){
-
-   }
-
-
-   if(cmd.type==="stop"){
-
-   }
+    ctx.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
 
-   if(cmd.type==="volume"){
+    const barWidth =
+      canvas.width /
+      buffer.length *
+      2.5;
 
-    if(masterGain){
 
-     masterGain.gain.value=
-      Number(cmd.data.value)/100;
+    let x = 0;
 
-     document.getElementById("master")
-      .value=
-      cmd.data.value;
+
+    for(let i=0;
+        i<buffer.length;
+        i++){
+
+      const barHeight =
+        buffer[i] *
+        canvas.height /
+        255;
+
+
+      ctx.fillStyle =
+        "#19ff88";
+
+
+      ctx.fillRect(
+        x,
+        canvas.height-barHeight,
+        barWidth,
+        barHeight
+      );
+
+
+      x += barWidth + 1;
+
+      if(x > canvas.width)
+        break;
 
     }
 
-   }
-
   }
- );
+
+
+  draw();
 
 }
+
+
+// ============================
+// WEBRTC RECEIVER
+// ============================
+
+const peer =
+  new RTCPeerConnection({
+
+    iceServers:[
+      {
+        urls:
+        "stun:stun.l.google.com:19302"
+      }
+    ]
+
+  });
+
+
+peer.ontrack =
+  event => {
+
+    const stream =
+      event.streams[0];
+
+    const audio =
+      document.getElementById(
+        "audio"
+      );
+
+    audio.srcObject =
+      stream;
+
+
+    createAudioEngine(
+      stream
+    );
+
+  };
+
+
+peer.onconnectionstatechange =
+  () => {
+
+    document.getElementById(
+      "status"
+    ).textContent =
+      "WebRTC: " +
+      peer.connectionState;
+
+  };
 
 </script>
 
 </body>
-  </html>
+</html>
