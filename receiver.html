@@ -9,690 +9,450 @@
 *{box-sizing:border-box}
 
 body{
- margin:0;
- background:#070a0f;
- color:white;
- font-family:Arial,sans-serif;
+  margin:0;
+  background:#080b10;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:20px;
 }
 
-.app{
- width:min(1100px,95%);
- margin:auto;
- padding:15px;
+.box{
+  max-width:600px;
+  margin:auto;
+  background:#11161d;
+  border:1px solid #29313c;
+  border-radius:18px;
+  padding:20px;
 }
 
 h1{
- text-align:center;
- letter-spacing:3px;
-}
-
-.card{
- background:#111720;
- border:1px solid #293444;
- border-radius:16px;
- padding:16px;
- margin:12px 0;
+  text-align:center;
+  color:#00e5ff;
 }
 
 input,button{
- width:100%;
- padding:12px;
- margin:5px 0;
- border-radius:9px;
- border:1px solid #344154;
- background:#090f16;
- color:white;
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:10px;
+  border:1px solid #394451;
+  background:#080b10;
+  color:white;
+  font-size:16px;
 }
 
 button{
- background:#172235;
- font-weight:bold;
+  background:#008fa3;
+  border:0;
+  font-weight:bold;
 }
 
 .status{
- padding:12px;
- background:#080c12;
- border-radius:8px;
+  margin-top:18px;
+  padding:18px;
+  border-radius:12px;
+  text-align:center;
+  background:#191f27;
+  font-size:20px;
+  font-weight:bold;
 }
 
-.eq{
- display:grid;
- grid-template-columns:repeat(10,1fr);
- gap:8px;
+audio{
+  width:100%;
+  margin-top:20px;
 }
 
-.band{
- text-align:center;
- font-size:11px;
-}
-
-.band input{
- height:150px;
- writing-mode:vertical-lr;
- direction:rtl;
-}
-
-canvas{
- width:100%;
- height:250px;
- background:#020406;
- border-radius:10px;
-}
-
-@media(max-width:700px){
- .eq{
-   grid-template-columns:repeat(5,1fr);
- }
+.log{
+  margin-top:15px;
+  background:#05070a;
+  padding:12px;
+  border-radius:10px;
+  height:180px;
+  overflow:auto;
+  font-size:13px;
+  color:#9defff;
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
+<div class="box">
 
 <h1>AVEDOW RECEIVER</h1>
 
-<div class="card">
-
-<h3>ROOM</h3>
-
 <input
- id="room"
- placeholder="Masukkan kode room"
->
+  id="room"
+  placeholder="Masukkan ROOM yang sama"
+/>
 
-<button onclick="connectReceiver()">
-🔗 CONNECT
+<button id="connectBtn">
+HUBUNGKAN TRANSMITTER
 </button>
 
 <div id="status" class="status">
-Menunggu...
-</div>
-
-</div>
-
-
-<div class="card">
-
-<h3>10 BAND EQ</h3>
-
-<div class="eq">
-
-<div class="band">
-31 Hz
-<input id="eq0" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-63 Hz
-<input id="eq1" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-125 Hz
-<input id="eq2" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-250 Hz
-<input id="eq3" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-500 Hz
-<input id="eq4" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-1K
-<input id="eq5" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-2K
-<input id="eq6" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-4K
-<input id="eq7" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-8K
-<input id="eq8" type="range" min="-12" max="12" value="0">
-</div>
-
-<div class="band">
-16K
-<input id="eq9" type="range" min="-12" max="12" value="0">
-</div>
-
-</div>
-</div>
-
-
-<div class="card">
-
-<h3>SPECTRUM ANALYZER</h3>
-
-<canvas id="spectrum"></canvas>
-
-</div>
-
-
-<div class="card">
-
-<h3>COMPRESSOR</h3>
-
-<input
- id="compression"
- type="range"
- min="1"
- max="20"
- value="8"
- step=".1"
->
-
-<h3>REVERB</h3>
-
-<input
- id="reverb"
- type="range"
- min="0"
- max="1"
- value=".2"
- step=".01"
->
-
-<h3>DELAY</h3>
-
-<input
- id="delay"
- type="range"
- min="0"
- max="1"
- value=".2"
- step=".01"
->
-
-<h3>MASTER</h3>
-
-<input
- id="master"
- type="range"
- min="0"
- max="1"
- value="1"
- step=".01"
->
-
+🔴 OFFLINE
 </div>
 
 <audio
- id="audio"
- autoplay
- controls
- style="width:100%"
-></audio>
+  id="audio"
+  autoplay
+  controls>
+</audio>
+
+<div id="log" class="log"></div>
 
 </div>
 
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script type="module">
 
-<script>
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-const firebaseConfig={
- apiKey:"ISI_API_KEY_FIREBASE",
- authDomain:"ISI_PROJECT.firebaseapp.com",
- databaseURL:"https://ISI_PROJECT-default-rtdb.firebaseio.com",
- projectId:"ISI_PROJECT",
- storageBucket:"ISI_PROJECT.appspot.com",
- messagingSenderId:"ISI_SENDER_ID",
- appId:"ISI_APP_ID"
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  push
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
+/* =========================================
+   FIREBASE CONFIG YANG SAMA DENGAN TRANSMITTER
+========================================= */
+
+const firebaseConfig = {
+  apiKey: "ISI_API_KEY",
+  authDomain: "ISI_PROJECT.firebaseapp.com",
+  databaseURL: "https://ISI_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "ISI_PROJECT",
+  storageBucket: "ISI_PROJECT.appspot.com",
+  messagingSenderId: "ISI_SENDER_ID",
+  appId: "ISI_APP_ID"
 };
 
-firebase.initializeApp(firebaseConfig);
 
-const db=firebase.database();
+/* ========================================= */
 
-let room="";
-let pc=null;
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-let audioContext;
-let source;
-let analyser;
-let master;
-let compressor;
-let delayNode;
-let delayGain;
+let pc = null;
+let roomCode = "";
 
-let eqNodes=[];
+const audio =
+  document.getElementById("audio");
 
-const frequencies=[
- 31,63,125,250,500,
- 1000,2000,4000,8000,16000
-];
+const statusBox =
+  document.getElementById("status");
+
+const logBox =
+  document.getElementById("log");
 
 
-/* ================= CONNECT ================= */
+function log(text){
 
-async function connectReceiver(){
+  const time =
+    new Date().toLocaleTimeString();
 
- room=document.getElementById("room").value.trim();
+  logBox.innerHTML +=
+    `[${time}] ${text}<br>`;
 
- if(!room){
-   alert("Masukkan room.");
-   return;
- }
-
-
- pc=new RTCPeerConnection({
-   iceServers:[
-     {
-       urls:"stun:stun.l.google.com:19302"
-     }
-   ]
- });
+  logBox.scrollTop =
+    logBox.scrollHeight;
+}
 
 
- pc.ontrack=event=>{
+function status(text){
 
-   const stream=event.streams[0];
-
-   const audio=
-     document.getElementById("audio");
-
-   audio.srcObject=stream;
-
-   startAudioEngine(stream);
-
- };
-
-
- pc.onicecandidate=event=>{
-
-   if(event.candidate){
-
-     db.ref(
-       "avedow/"+room+
-       "/receiver/candidates"
-     ).push(
-       event.candidate.toJSON()
-     );
-
-   }
-
- };
-
-
- /* GET TRANSMITTER OFFER */
-
- db.ref(
-   "avedow/"+room+
-   "/transmitter/offer"
- ).on("value",async snap=>{
-
-   const offer=snap.val();
-
-   if(!offer)return;
-
-   try{
-
-     await pc.setRemoteDescription(
-       new RTCSessionDescription(offer)
-     );
-
-
-     const answer=
-       await pc.createAnswer();
-
-
-     await pc.setLocalDescription(answer);
-
-
-     await db.ref(
-       "avedow/"+room+
-       "/receiver/answer"
-     ).set({
-       type:answer.type,
-       sdp:answer.sdp
-     });
-
-
-     document.getElementById(
-       "status"
-     ).textContent=
-       "Receiver tersambung.";
-
-   }catch(e){
-
-     console.error(e);
-
-   }
-
- });
-
-
- /* GET TRANSMITTER ICE */
-
- db.ref(
-   "avedow/"+room+
-   "/transmitter/candidates"
- ).on("child_added",async snap=>{
-
-   try{
-
-     await pc.addIceCandidate(
-       new RTCIceCandidate(
-         snap.val()
-       )
-     );
-
-   }catch(e){
-
-     console.error(e);
-
-   }
-
- });
-
-
- /* ONLINE */
-
- db.ref(
-   "avedow/"+room+
-   "/receiver"
- ).update({
-   online:true,
-   time:Date.now()
- });
-
-
- listenCommands();
+  statusBox.textContent = text;
 
 }
 
 
-/* ================= COMMANDS ================= */
+/* =========================================
+   MULAI RECEIVER
+========================================= */
 
-function listenCommands(){
+async function startReceiver(){
 
- db.ref(
-   "avedow/"+room+
-   "/commands"
- ).on("child_added",snap=>{
+  roomCode =
+    document
+      .getElementById("room")
+      .value
+      .trim();
 
-   const cmd=snap.val();
+  if(!roomCode){
 
-   console.log(
-     "COMMAND:",
-     cmd
-   );
+    alert("Masukkan ROOM terlebih dahulu");
 
-   /*
-    Receiver menerima perintah.
-    Audio sendiri tetap berasal dari WebRTC.
-   */
+    return;
+  }
 
- });
+
+  status("🟡 MENUNGGU TRANSMITTER");
+
+  log("Receiver aktif");
+
+
+  pc =
+    new RTCPeerConnection({
+
+      iceServers:[
+        {
+          urls:
+          "stun:stun.l.google.com:19302"
+        }
+      ]
+
+    });
+
+
+  /* =====================================
+     STATUS WEBRTC
+  ===================================== */
+
+  pc.onconnectionstatechange = () => {
+
+    log(
+      "WebRTC: " +
+      pc.connectionState
+    );
+
+
+    if(
+      pc.connectionState ===
+      "connecting"
+    ){
+
+      status(
+        "🔵 MENGHUBUNGKAN..."
+      );
+
+    }
+
+
+    if(
+      pc.connectionState ===
+      "connected"
+    ){
+
+      status(
+        "🟢 TERHUBUNG"
+      );
+
+    }
+
+
+    if(
+      pc.connectionState ===
+      "disconnected" ||
+      pc.connectionState ===
+      "failed" ||
+      pc.connectionState ===
+      "closed"
+    ){
+
+      status(
+        "🔴 TERPUTUS"
+      );
+
+    }
+
+  };
+
+
+  pc.oniceconnectionstatechange =
+  () => {
+
+    log(
+      "ICE: " +
+      pc.iceConnectionState
+    );
+
+  };
+
+
+  /* =====================================
+     AUDIO DARI TRANSMITTER
+  ===================================== */
+
+  pc.ontrack = event => {
+
+    log("Audio dari transmitter diterima");
+
+    audio.srcObject =
+      event.streams[0];
+
+    audio.play()
+      .catch(() => {
+
+        log(
+          "Tekan tombol play pada audio"
+        );
+
+      });
+
+  };
+
+
+  /* =====================================
+     ICE RECEIVER
+  ===================================== */
+
+  pc.onicecandidate =
+  async event => {
+
+    if(event.candidate){
+
+      await push(
+        ref(
+          db,
+          `avedow/${roomCode}/receiverCandidates`
+        ),
+        event.candidate.toJSON()
+      );
+
+    }
+
+  };
+
+
+  /* =====================================
+     DENGARKAN OFFER TRANSMITTER
+  ===================================== */
+
+  onValue(
+
+    ref(
+      db,
+      `avedow/${roomCode}/transmitterOffer`
+    ),
+
+    async snapshot => {
+
+      const offer =
+        snapshot.val();
+
+      if(!offer) return;
+
+
+      if(
+        pc.signalingState !==
+        "stable"
+      ){
+
+        return;
+
+      }
+
+
+      log(
+        "OFFER dari transmitter diterima"
+      );
+
+      status(
+        "🔵 MENGHUBUNGKAN..."
+      );
+
+
+      await pc.setRemoteDescription(
+
+        new RTCSessionDescription(
+          offer
+        )
+
+      );
+
+
+      const answer =
+        await pc.createAnswer();
+
+
+      await pc.setLocalDescription(
+        answer
+      );
+
+
+      await set(
+
+        ref(
+          db,
+          `avedow/${roomCode}/receiverAnswer`
+        ),
+
+        {
+          type: answer.type,
+          sdp: answer.sdp
+        }
+
+      );
+
+
+      log(
+        "ANSWER dikirim ke transmitter"
+      );
+
+    }
+
+  );
+
+
+  /* =====================================
+     DENGARKAN ICE TRANSMITTER
+  ===================================== */
+
+  onValue(
+
+    ref(
+      db,
+      `avedow/${roomCode}/transmitterCandidates`
+    ),
+
+    async snapshot => {
+
+      const data =
+        snapshot.val();
+
+      if(!data) return;
+
+
+      for(
+        const key in data
+      ){
+
+        try{
+
+          await pc.addIceCandidate(
+
+            new RTCIceCandidate(
+              data[key]
+            )
+
+          );
+
+        }catch(error){
+
+          console.log(error);
+
+        }
+
+      }
+
+    }
+
+  );
 
 }
 
 
-/* ================= AUDIO DSP ================= */
-
-function startAudioEngine(stream){
-
- if(audioContext){
-   audioContext.close();
- }
-
-
- audioContext=
- new(
-   window.AudioContext ||
-   window.webkitAudioContext
- )();
-
-
- source=
- audioContext.createMediaStreamSource(
-   stream
- );
-
-
- eqNodes=[];
-
-
- frequencies.forEach(freq=>{
-
-   const filter=
-     audioContext.createBiquadFilter();
-
-   filter.type="peaking";
-   filter.frequency.value=freq;
-   filter.Q.value=1;
-   filter.gain.value=0;
-
-   eqNodes.push(filter);
-
- });
-
-
- compressor=
- audioContext.createDynamicsCompressor();
-
- compressor.threshold.value=-24;
- compressor.knee.value=20;
- compressor.ratio.value=8;
- compressor.attack.value=.003;
- compressor.release.value=.25;
-
-
- delayNode=
- audioContext.createDelay(2);
-
- delayNode.delayTime.value=.18;
-
-
- delayGain=
- audioContext.createGain();
-
- delayGain.gain.value=.2;
-
-
- analyser=
- audioContext.createAnalyser();
-
- analyser.fftSize=2048;
-
-
- master=
- audioContext.createGain();
-
- master.gain.value=1;
-
-
- let node=source;
-
-
- eqNodes.forEach(filter=>{
-
-   node.connect(filter);
-
-   node=filter;
-
- });
-
-
- node.connect(compressor);
-
- compressor.connect(master);
-
- compressor.connect(delayNode);
-
- delayNode.connect(delayGain);
-
- delayGain.connect(master);
-
- master.connect(analyser);
-
- analyser.connect(
-   audioContext.destination
- );
-
-
- setupControls();
-
- drawSpectrum();
-
-}
-
-
-/* ================= CONTROLS ================= */
-
-function setupControls(){
-
- eqNodes.forEach((node,i)=>{
-
-   document.getElementById(
-     "eq"+i
-   ).oninput=function(){
-
-     node.gain.value=
-       Number(this.value);
-
-   };
-
- });
-
-
- document.getElementById(
-   "master"
- ).oninput=function(){
-
-   master.gain.value=
-     Number(this.value);
-
- };
-
-
- document.getElementById(
-   "delay"
- ).oninput=function(){
-
-   delayGain.gain.value=
-     Number(this.value);
-
- };
-
-
- document.getElementById(
-   "compression"
- ).oninput=function(){
-
-   compressor.ratio.value=
-     Number(this.value);
-
- };
-
-
- document.getElementById(
-   "reverb"
- ).oninput=function(){
-
-   /*
-    Mengatur jumlah efek delay
-    sebagai ambience/reverb sederhana.
-   */
-
-   delayGain.gain.value=
-     Number(this.value);
-
- };
-
-}
-
-
-/* ================= SPECTRUM ================= */
-
-function drawSpectrum(){
-
- const canvas=
-   document.getElementById(
-     "spectrum"
-   );
-
- const ctx=
-   canvas.getContext("2d");
-
-
- function draw(){
-
-   requestAnimationFrame(draw);
-
-   if(!analyser)return;
-
-
-   const data=
-     new Uint8Array(
-       analyser.frequencyBinCount
-     );
-
-
-   analyser.getByteFrequencyData(
-     data
-   );
-
-
-   ctx.clearRect(
-     0,0,
-     canvas.width,
-     canvas.height
-   );
-
-
-   const width=
-     canvas.width/data.length*3;
-
-   let x=0;
-
-
-   for(let i=0;i<data.length;i++){
-
-     const height=
-       data[i]*
-       canvas.height/
-       255;
-
-
-     ctx.fillStyle="#00ff88";
-
-
-     ctx.fillRect(
-       x,
-       canvas.height-height,
-       width,
-       height
-     );
-
-
-     x+=width+1;
-
-     if(x>canvas.width)
-       break;
-
-   }
-
- }
-
- draw();
-
-}
+document
+  .getElementById("connectBtn")
+  .onclick =
+  startReceiver;
 
 </script>
 
