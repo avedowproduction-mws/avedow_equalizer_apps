@@ -2,426 +2,500 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>AVEDOW TRANSMITTER</title>
 
 <style>
 *{box-sizing:border-box}
+
 body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#080b10;
-  color:#fff;
-  padding:20px;
+    margin:0;
+    background:#080b10;
+    color:#fff;
+    font-family:Arial,sans-serif;
 }
-.app{
-  max-width:700px;
-  margin:auto;
+
+.container{
+    width:min(900px,94%);
+    margin:auto;
+    padding:20px 0;
 }
+
 h1{
-  text-align:center;
-  letter-spacing:3px;
+    text-align:center;
+    letter-spacing:4px;
 }
+
 .card{
-  background:#111720;
-  border:1px solid #263241;
-  border-radius:16px;
-  padding:18px;
-  margin:15px 0;
+    background:#111720;
+    border:1px solid #293444;
+    border-radius:16px;
+    padding:18px;
+    margin:15px 0;
 }
+
 input,button{
-  width:100%;
-  padding:13px;
-  margin:6px 0;
-  border-radius:9px;
-  border:1px solid #334155;
-  background:#0b1118;
-  color:white;
+    width:100%;
+    padding:13px;
+    margin:6px 0;
+    border-radius:9px;
+    border:1px solid #344154;
+    background:#0b1017;
+    color:white;
 }
+
 button{
-  background:#172235;
-  cursor:pointer;
-  font-weight:bold;
+    cursor:pointer;
+    font-weight:bold;
 }
-button:active{transform:scale(.98)}
-.results button{text-align:left}
+
+button:hover{
+    background:#1b2a40;
+}
+
 #player{
-  width:100%;
-  aspect-ratio:16/9;
-  background:#000;
+    width:100%;
+    aspect-ratio:16/9;
+    background:#000;
 }
+
+.result{
+    padding:10px;
+    margin:5px 0;
+    border:1px solid #283445;
+    border-radius:8px;
+    cursor:pointer;
+}
+
 .status{
-  padding:12px;
-  border-radius:10px;
-  background:#0b1118;
-  margin-top:10px;
+    padding:12px;
+    background:#080c12;
+    border-radius:8px;
+    margin-top:10px;
+}
+
+video{
+    width:100%;
+    display:none;
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
+<div class="container">
 
 <h1>AVEDOW TRANSMITTER</h1>
 
 <div class="card">
-  <h3>ROOM</h3>
-  <input id="roomCode" placeholder="Masukkan kode room">
+
+<h3>ROOM</h3>
+
+<input
+id="roomCode"
+placeholder="Masukkan kode room RECEIVER">
+
+<button onclick="connectRoom()">
+🔗 CONNECT RECEIVER
+</button>
+
+<div id="connectionStatus" class="status">
+Belum tersambung
 </div>
 
-<div class="card">
-  <h3>YOUTUBE</h3>
-
-  <input id="apiKey" placeholder="YouTube Data API v3 Key">
-  <input id="searchInput" placeholder="Cari lagu di YouTube">
-
-  <button onclick="searchYoutube()">🔎 CARI YOUTUBE</button>
-
-  <div id="results" class="results"></div>
 </div>
 
-<div class="card">
-
-  <div id="player"></div>
-
-  <button onclick="playVideo()">▶ PLAY</button>
-  <button onclick="pauseVideo()">⏸ PAUSE</button>
-  <button onclick="stopVideo()">⏹ STOP</button>
-
-  <button onclick="previousVideo()">⏮ PREVIOUS</button>
-  <button onclick="nextVideo()">⏭ NEXT</button>
-
-  <label>Volume</label>
-  <input
-    id="volume"
-    type="range"
-    min="0"
-    max="100"
-    value="100"
-    oninput="setVolume(this.value)"
-  >
-
-</div>
 
 <div class="card">
 
-  <h3>AUDIO STREAM</h3>
+<h3>YOUTUBE</h3>
 
-  <button onclick="startAudioStream()">
-    🎙 AKTIFKAN AUDIO STREAM
-  </button>
+<input
+id="youtubeKey"
+placeholder="YouTube Data API v3 Key">
 
-  <button onclick="stopAudioStream()">
-    ⛔ MATIKAN AUDIO STREAM
-  </button>
+<input
+id="search"
+placeholder="Cari lagu YouTube">
 
-  <div id="status" class="status">
-    Belum tersambung
-  </div>
+<button onclick="searchYouTube()">
+🔎 CARI
+</button>
+
+<div id="results"></div>
 
 </div>
 
+
+<div class="card">
+
+<h3>PLAYER</h3>
+
+<div id="player"></div>
+
+<button onclick="playVideo()">▶ PLAY</button>
+
+<button onclick="pauseVideo()">⏸ PAUSE</button>
+
+<button onclick="previousVideo()">⏮ PREVIOUS</button>
+
+<button onclick="nextVideo()">⏭ NEXT</button>
+
+<label>VOLUME</label>
+
+<input
+type="range"
+min="0"
+max="100"
+value="100"
+oninput="changeVolume(this.value)"
+>
+
 </div>
+
+
+<div class="card">
+
+<h3>AUDIO TRANSMISSION</h3>
+
+<button onclick="startCapture()">
+🎙 AKTIFKAN AUDIO STREAM
+</button>
+
+<button onclick="stopCapture()">
+⛔ STOP STREAM
+</button>
+
+<div id="streamStatus" class="status">
+Stream belum aktif
+</div>
+
+</div>
+
+</div>
+
 
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
 
-let player;
+let youtubePlayer;
 
-let playlist = [];
-let currentIndex = 0;
+let videos=[];
+let currentVideo=0;
 
-let localStream = null;
-let peer = null;
-
-const statusBox = document.getElementById("status");
+let peerConnection=null;
+let capturedStream=null;
 
 
-// ============================
+// ===========================
 // YOUTUBE
-// ============================
+// ===========================
 
 function onYouTubeIframeAPIReady(){
 
-  player = new YT.Player("player",{
-    videoId:"",
-    playerVars:{
-      autoplay:0,
-      controls:1,
-      playsinline:1
-    }
-  });
+    youtubePlayer=new YT.Player(
+        "player",
+        {
+            videoId:"",
+            playerVars:{
+                playsinline:1,
+                controls:1
+            }
+        }
+    );
 
 }
 
 
-function searchYoutube(){
+async function searchYouTube(){
 
-  const key = document.getElementById("apiKey").value.trim();
-  const query = document.getElementById("searchInput").value.trim();
+    const key=
+        document.getElementById("youtubeKey").value.trim();
 
-  if(!key){
-    alert("Masukkan YouTube API Key terlebih dahulu.");
-    return;
-  }
+    const query=
+        document.getElementById("search").value.trim();
 
-  if(!query){
-    alert("Masukkan kata pencarian.");
-    return;
-  }
-
-  const url =
-    "https://www.googleapis.com/youtube/v3/search" +
-    "?part=snippet" +
-    "&type=video" +
-    "&maxResults=10" +
-    "&q=" + encodeURIComponent(query) +
-    "&key=" + encodeURIComponent(key);
-
-  fetch(url)
-  .then(r => r.json())
-  .then(data => {
-
-    const box = document.getElementById("results");
-    box.innerHTML = "";
-
-    if(!data.items){
-      box.innerHTML = "<p>Hasil tidak ditemukan.</p>";
-      return;
+    if(!key){
+        alert("Masukkan YouTube API Key.");
+        return;
     }
 
-    data.items.forEach(item => {
+    if(!query){
+        alert("Masukkan pencarian.");
+        return;
+    }
 
-      const id = item.id.videoId;
+    const url=
+        "https://www.googleapis.com/youtube/v3/search"+
+        "?part=snippet"+
+        "&type=video"+
+        "&maxResults=10"+
+        "&q="+encodeURIComponent(query)+
+        "&key="+encodeURIComponent(key);
 
-      const button = document.createElement("button");
+    try{
 
-      button.textContent =
-        item.snippet.title;
+        const response=
+            await fetch(url);
 
-      button.onclick = () => {
+        const data=
+            await response.json();
 
-        playlist.push(id);
+        const results=
+            document.getElementById("results");
 
-        currentIndex =
-          playlist.length - 1;
+        results.innerHTML="";
 
-        player.loadVideoById(id);
+        if(!data.items){
+            results.innerHTML=
+                "<p>Hasil tidak ditemukan.</p>";
+            return;
+        }
 
-      };
+        data.items.forEach(item=>{
 
-      box.appendChild(button);
+            const videoId=
+                item.id.videoId;
 
-    });
+            const div=
+                document.createElement("div");
 
-  })
-  .catch(err => {
+            div.className="result";
 
-    console.error(err);
+            div.textContent=
+                item.snippet.title;
 
-    alert("Gagal mencari YouTube.");
+            div.onclick=()=>{
 
-  });
+                videos.push(videoId);
+
+                currentVideo=
+                    videos.length-1;
+
+                youtubePlayer.loadVideoById(
+                    videoId
+                );
+
+            };
+
+            results.appendChild(div);
+
+        });
+
+    }catch(error){
+
+        console.error(error);
+
+        alert("Gagal mengakses YouTube API.");
+
+    }
 
 }
 
 
 function playVideo(){
 
-  if(player)
-    player.playVideo();
+    if(youtubePlayer)
+        youtubePlayer.playVideo();
 
 }
 
 
 function pauseVideo(){
 
-  if(player)
-    player.pauseVideo();
-
-}
-
-
-function stopVideo(){
-
-  if(player)
-    player.stopVideo();
-
-}
-
-
-function setVolume(value){
-
-  if(player)
-    player.setVolume(Number(value));
-
-}
-
-
-function nextVideo(){
-
-  if(playlist.length === 0)
-    return;
-
-  currentIndex++;
-
-  if(currentIndex >= playlist.length)
-    currentIndex = 0;
-
-  player.loadVideoById(
-    playlist[currentIndex]
-  );
+    if(youtubePlayer)
+        youtubePlayer.pauseVideo();
 
 }
 
 
 function previousVideo(){
 
-  if(playlist.length === 0)
-    return;
+    if(videos.length===0)return;
 
-  currentIndex--;
+    currentVideo--;
 
-  if(currentIndex < 0)
-    currentIndex = playlist.length - 1;
+    if(currentVideo<0)
+        currentVideo=videos.length-1;
 
-  player.loadVideoById(
-    playlist[currentIndex]
-  );
+    youtubePlayer.loadVideoById(
+        videos[currentVideo]
+    );
 
 }
 
 
-// ============================
-// AUDIO STREAM
-// ============================
+function nextVideo(){
 
-async function startAudioStream(){
+    if(videos.length===0)return;
 
-  try{
+    currentVideo++;
 
-    statusBox.textContent =
-      "Meminta izin audio capture...";
+    if(currentVideo>=videos.length)
+        currentVideo=0;
 
-    localStream =
-      await navigator.mediaDevices.getDisplayMedia({
+    youtubePlayer.loadVideoById(
+        videos[currentVideo]
+    );
 
-        video:true,
-
-        audio:true
-
-      });
+}
 
 
-    const audioTracks =
-      localStream.getAudioTracks();
+function changeVolume(value){
 
-    if(audioTracks.length === 0){
+    if(youtubePlayer)
+        youtubePlayer.setVolume(
+            Number(value)
+        );
 
-      statusBox.textContent =
-        "Audio tidak ikut tertangkap. Pilih opsi audio saat capture.";
+}
 
-      return;
+
+// ===========================
+// WEBRTC
+// ===========================
+
+async function connectRoom(){
+
+    const room=
+        document.getElementById("roomCode")
+        .value.trim();
+
+    if(!room){
+
+        alert("Masukkan kode room.");
+
+        return;
+
+    }
+
+    document.getElementById(
+        "connectionStatus"
+    ).textContent=
+        "Room siap. Menunggu Receiver...";
+
+}
+
+
+// ===========================
+// AUDIO CAPTURE
+// ===========================
+
+async function startCapture(){
+
+    try{
+
+        capturedStream=
+            await navigator.mediaDevices
+            .getDisplayMedia({
+
+                video:true,
+                audio:true
+
+            });
+
+
+        const audioTracks=
+            capturedStream.getAudioTracks();
+
+
+        if(audioTracks.length===0){
+
+            document.getElementById(
+                "streamStatus"
+            ).textContent=
+                "Audio tidak tertangkap. Pilih opsi SHARE AUDIO jika tersedia.";
+
+            return;
+
+        }
+
+
+        peerConnection=
+            new RTCPeerConnection({
+
+                iceServers:[
+                    {
+                        urls:
+                        "stun:stun.l.google.com:19302"
+                    }
+                ]
+
+            });
+
+
+        audioTracks.forEach(track=>{
+
+            peerConnection.addTrack(
+                track,
+                capturedStream
+            );
+
+        });
+
+
+        const offer=
+            await peerConnection.createOffer();
+
+        await peerConnection.setLocalDescription(
+            offer
+        );
+
+
+        document.getElementById(
+            "streamStatus"
+        ).textContent=
+            "Audio capture aktif. WebRTC siap.";
+
+
+        console.log(
+            "SDP OFFER:",
+            offer
+        );
+
+    }catch(error){
+
+        console.error(error);
+
+        document.getElementById(
+            "streamStatus"
+        ).textContent=
+            "Gagal: "+error.message;
+
+    }
+
+}
+
+
+function stopCapture(){
+
+    if(capturedStream){
+
+        capturedStream
+        .getTracks()
+        .forEach(track=>{
+            track.stop();
+        });
+
+        capturedStream=null;
 
     }
 
 
-    peer =
-      new RTCPeerConnection({
+    if(peerConnection){
 
-        iceServers:[
-          {
-            urls:"stun:stun.l.google.com:19302"
-          }
-        ]
+        peerConnection.close();
 
-      });
+        peerConnection=null;
+
+    }
 
 
-    audioTracks.forEach(track => {
-
-      peer.addTrack(
-        track,
-        localStream
-      );
-
-    });
-
-
-    peer.onicecandidate =
-      event => {
-
-        if(event.candidate){
-
-          console.log(
-            "ICE candidate:",
-            event.candidate
-          );
-
-        }
-
-      };
-
-
-    const offer =
-      await peer.createOffer();
-
-    await peer.setLocalDescription(
-      offer
-    );
-
-
-    console.log(
-      "SDP OFFER:",
-      offer.sdp
-    );
-
-
-    statusBox.textContent =
-      "Audio stream aktif. SDP offer tersedia di console.";
-
-  }
-
-  catch(error){
-
-    console.error(error);
-
-    statusBox.textContent =
-      "Audio stream gagal: " +
-      error.message;
-
-  }
-
-}
-
-
-function stopAudioStream(){
-
-  if(localStream){
-
-    localStream
-      .getTracks()
-      .forEach(track =>
-        track.stop()
-      );
-
-    localStream = null;
-
-  }
-
-
-  if(peer){
-
-    peer.close();
-    peer = null;
-
-  }
-
-
-  statusBox.textContent =
-    "Audio stream dimatikan.";
+    document.getElementById(
+        "streamStatus"
+    ).textContent=
+        "Audio stream dihentikan.";
 
 }
 
